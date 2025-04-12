@@ -1,9 +1,4 @@
-# Dependencias principales
-yt-dlp==2023.11.16
-pillow==10.1.0
-
-# Interfaz gráfica
-tkinter==0.1.0  # Incluido en Python estándar
-
-# Utilidades
-requests==2.31.0
+customtkinter>=5.2.0
+yt-dlp>=2023.11.16
+pillow>=10.1.0
+requests>=2.31.0
