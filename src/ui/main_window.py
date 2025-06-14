@@ -306,18 +306,26 @@ def MainWindow(page: ft.Page):
         
         page.update()
         
-        # Simular progreso de preparación (temporal, hasta que el downloader funcione)
-        def simulate_progress():
+        # Usar la descarga real en lugar de la simulación
+        def start_real_download():
+            try:
+                # Intentar descarga real
+                downloader.download(url, download_path, selected_format)
+            except Exception as e:
+                print(f"Error en descarga real: {e}")
+                # Si falla, usar simulación como fallback
+                simulate_download()
+        
+        def simulate_download():
             import time
             for i in range(10):
-                if progress_container.visible:  # Verificar que aún esté visible
+                if progress_container.visible:
                     progress_bar.value = (i + 1) * 0.1
                     progress_text.value = f"Preparando descarga... {i+1}/10"
                     progress_percent.value = f"{(i+1)*10}%"
                     page.update()
                     time.sleep(0.5)
             
-            # Simular descarga
             if progress_container.visible:
                 for i in range(100):
                     if progress_container.visible:
@@ -327,21 +335,27 @@ def MainWindow(page: ft.Page):
                         page.update()
                         time.sleep(0.1)
                 
-                # Completar
                 if progress_container.visible:
-                    fake_info = {
-                        'title': 'Video de prueba',
-                        'url': url,
-                        'format': selected_format,
-                        'path': download_path
-                    }
-                    download_complete(fake_info)
+                    # Obtener información real del video para el historial
+                    def get_info_and_complete():
+                        def info_callback(info):
+                            if info:
+                                download_complete(info)
+                            else:
+                                fake_info = {
+                                    'title': 'Video descargado',
+                                    'url': url,
+                                    'format': selected_format,
+                                    'path': download_path
+                                }
+                                download_complete(fake_info)
+                        
+                        downloader.get_video_info(url, info_callback)
+                    
+                    threading.Thread(target=get_info_and_complete, daemon=True).start()
         
-        # Ejecutar simulación en un hilo separado
-        threading.Thread(target=simulate_progress, daemon=True).start()
-        
-        # También intentar la descarga real (comentado hasta que funcione)
-        # downloader.download(url, download_path, selected_format)
+        # Ejecutar descarga en un hilo separado
+        threading.Thread(target=start_real_download, daemon=True).start()
     
     def is_valid_youtube_url(url: str) -> bool:
         import re
@@ -375,6 +389,9 @@ def MainWindow(page: ft.Page):
         duration = info.get('duration', 0)
         uploader = info.get('uploader', 'Canal desconocido')
         thumbnail_url = info.get('thumbnail', '')
+        
+        print(f"Mostrando info del video: {title}")  # Debug
+        print(f"URL de thumbnail: {thumbnail_url}")  # Debug
         
         # Formatear duración
         minutes, seconds = divmod(duration, 60)
@@ -415,38 +432,74 @@ def MainWindow(page: ft.Page):
         
         page.update()
         
-        # Cargar thumbnail si existe
-        if thumbnail_url:
+        # Cargar thumbnail si existe y es válida
+        if thumbnail_url and thumbnail_url.strip() and thumbnail_url.startswith(('http://', 'https://')):
+            print("Iniciando carga de thumbnail...")
             threading.Thread(target=lambda: load_thumbnail(thumbnail_url), daemon=True).start()
+        else:
+            print("No hay URL de thumbnail válida para cargar")
     
     def load_thumbnail(url: str):
         try:
-            with urllib.request.urlopen(url) as response:
+            print(f"Intentando cargar thumbnail desde: {url}")  # Debug
+            
+            if not url or url == '':
+                print("URL de thumbnail vacía")
+                return
+            
+            # Validar que la URL sea válida
+            if not url.startswith(('http://', 'https://')):
+                print(f"URL de thumbnail inválida: {url}")
+                return
+            
+            with urllib.request.urlopen(url, timeout=10) as response:
                 image_data = response.read()
+                print(f"Imagen descargada, tamaño: {len(image_data)} bytes")
             
             image = Image.open(BytesIO(image_data))
+            print(f"Imagen abierta, dimensiones: {image.size}")
+            
             image = image.resize((320, 180), Image.Resampling.LANCZOS)
+            print("Imagen redimensionada")
             
             temp_path = os.path.join(os.path.expanduser("~"), ".youtube_downloader_thumb.jpg")
             image.save(temp_path, "JPEG")
+            print(f"Imagen guardada en: {temp_path}")
             
-            # Actualizar UI en el thread principal
-            def update():
-                if video_info_content.controls:
-                    video_info_content.controls[0] = ft.Container(
-                        content=ft.Image(
-                            src=temp_path,
-                            width=320,
-                            height=180,
-                            fit=ft.ImageFit.COVER,
+            # Actualizar UI directamente (sin run_task)
+            def update_thumbnail():
+                try:
+                    if video_info_content.controls and len(video_info_content.controls) > 0:
+                        video_info_content.controls[0] = ft.Container(
+                            content=ft.Image(
+                                src=temp_path,
+                                width=320,
+                                height=180,
+                                fit=ft.ImageFit.COVER,
+                                border_radius=12
+                            ),
+                            bgcolor=theme.surface_color,
                             border_radius=12
                         )
-                    )
-                    page.update()
+                        page.update()
+                        print("UI actualizada con thumbnail")
+                except Exception as e:
+                    print(f"Error al actualizar UI con thumbnail: {e}")
             
-            page.run_task(update)
+            # Ejecutar la actualización en el hilo principal
+            import threading
+            if threading.current_thread() is threading.main_thread():
+                update_thumbnail()
+            else:
+                # Usar invoke para ejecutar en el hilo principal
+                page.session.invoke(update_thumbnail)
+            
+        except urllib.error.URLError as e:
+            print(f"Error de URL al cargar miniatura: {e}")
+        except urllib.error.HTTPError as e:
+            print(f"Error HTTP al cargar miniatura: {e}")
         except Exception as e:
-            print(f"Error al cargar miniatura: {e}")
+            print(f"Error general al cargar miniatura: {type(e).__name__}: {e}")
     
     def create_history_item(entry: dict):
         format_icon = ft.Icons.MUSIC_NOTE if entry.get('format') == 'mp3' else ft.Icons.VIDEO_FILE
