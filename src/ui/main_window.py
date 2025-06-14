@@ -4,10 +4,51 @@ import urllib.request
 from io import BytesIO
 from PIL import Image
 import flet as ft
+import json
+from datetime import datetime
 
 from src.ui.theme import AppTheme
 from src.utils.downloader import YouTubeDownloader
-from src.utils.history import DownloadHistory
+
+class SimpleHistory:
+    def __init__(self):
+        self.history_file = os.path.join(os.path.expanduser("~"), ".youtube_downloader_history.json")
+        self.history = self._load_history()
+    
+    def _load_history(self):
+        try:
+            if os.path.exists(self.history_file):
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"Error al cargar historial: {e}")
+        return []
+    
+    def _save_history(self):
+        try:
+            with open(self.history_file, 'w', encoding='utf-8') as f:
+                json.dump(self.history, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error al guardar historial: {e}")
+    
+    def add(self, info):
+        entry = {
+            'title': info.get('title', 'Desconocido'),
+            'url': info.get('url', ''),
+            'format': info.get('format', 'mp4'),
+            'date': datetime.now().strftime('%Y-%m-%d %H:%M'),
+            'path': info.get('path', '')
+        }
+        self.history.insert(0, entry)
+        self.history = self.history[:50]  # Mantener solo 50
+        self._save_history()
+    
+    def clear(self):
+        """Limpiar todo el historial"""
+        print("Limpiando historial...")  # Debug
+        self.history = []
+        self._save_history()
+        print(f"Historial después de limpiar: {len(self.history)} items")  # Debug
 
 def MainWindow(page: ft.Page):
     """Ventana principal como función en lugar de clase"""
@@ -15,7 +56,7 @@ def MainWindow(page: ft.Page):
     
     # Inicializar componentes
     downloader = YouTubeDownloader()
-    history_manager = DownloadHistory()
+    history_manager = SimpleHistory()  # Usar la clase simple
     
     # Variables de estado
     download_path = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -373,11 +414,13 @@ def MainWindow(page: ft.Page):
     
     def clear_history(e):
         def confirm(e):
+            print(f"Botón presionado: {e.control.text}")  # Debug
             if e.control.text == "Sí":
+                print("Confirmando limpieza...")  # Debug
                 history_manager.clear()
                 update_history()
-            dialog.open = False
-            page.update()
+                print("Historial limpiado y UI actualizada")  # Debug
+            page.close(dialog)
         
         dialog = ft.AlertDialog(
             title=ft.Text("Confirmar"),
@@ -385,11 +428,12 @@ def MainWindow(page: ft.Page):
             actions=[
                 ft.TextButton("Cancelar", on_click=confirm),
                 ft.TextButton("Sí", on_click=confirm, style=ft.ButtonStyle(color=theme.error_color))
-            ]
+            ],
+            actions_alignment=ft.MainAxisAlignment.END
         )
         
-        page.dialog = dialog
-        dialog.open = True
+        print("Abriendo diálogo de confirmación...")  # Debug
+        page.open(dialog)
         page.update()
     
     def toggle_theme(e):
