@@ -462,37 +462,28 @@ def MainWindow(page: ft.Page):
             image = image.resize((320, 180), Image.Resampling.LANCZOS)
             print("Imagen redimensionada")
             
-            temp_path = os.path.join(os.path.expanduser("~"), ".youtube_downloader_thumb.jpg")
-            image.save(temp_path, "JPEG")
-            print(f"Imagen guardada en: {temp_path}")
+            # Convertir a base64
+            import base64
+            # No importar BytesIO aquí porque ya está importado arriba
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
             
-            # Actualizar UI directamente (sin run_task)
-            def update_thumbnail():
-                try:
-                    if video_info_content.controls and len(video_info_content.controls) > 0:
-                        video_info_content.controls[0] = ft.Container(
-                            content=ft.Image(
-                                src=temp_path,
-                                width=320,
-                                height=180,
-                                fit=ft.ImageFit.COVER,
-                                border_radius=12
-                            ),
-                            bgcolor=theme.surface_color,
-                            border_radius=12
-                        )
-                        page.update()
-                        print("UI actualizada con thumbnail")
-                except Exception as e:
-                    print(f"Error al actualizar UI con thumbnail: {e}")
-            
-            # Ejecutar la actualización en el hilo principal
-            import threading
-            if threading.current_thread() is threading.main_thread():
-                update_thumbnail()
-            else:
-                # Usar invoke para ejecutar en el hilo principal
-                page.session.invoke(update_thumbnail)
+            # Actualizar UI directamente (esto funciona mejor en Flet)
+            if video_info_content.controls and len(video_info_content.controls) > 0:
+                video_info_content.controls[0] = ft.Container(
+                    content=ft.Image(
+                        src_base64=img_str,
+                        width=320,
+                        height=180,
+                        fit=ft.ImageFit.COVER,
+                        border_radius=12
+                    ),
+                    bgcolor=theme.surface_color,
+                    border_radius=12
+                )
+                page.update()
+                print("UI actualizada con thumbnail")
             
         except urllib.error.URLError as e:
             print(f"Error de URL al cargar miniatura: {e}")
