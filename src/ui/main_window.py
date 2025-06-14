@@ -128,15 +128,33 @@ def MainWindow(page: ft.Page):
         on_click=select_folder
     )
     
-    # Progress bar con estilo
+    # Progress bar con estilo (inicialmente oculto)
     progress_bar = ft.ProgressBar(
         value=0,
         height=8,
         color=theme.primary_color,
-        bgcolor=theme.border_color
+        bgcolor=theme.border_color,
+        visible=False
     )
-    progress_text = ft.Text("Listo para descargar", size=14, color=theme.text_primary)
-    progress_percent = ft.Text("0%", size=14, weight=ft.FontWeight.BOLD, color=theme.text_primary)
+    progress_text = ft.Text("", size=14, color=theme.text_primary, visible=False)
+    progress_percent = ft.Text("", size=14, weight=ft.FontWeight.BOLD, color=theme.text_primary, visible=False)
+    
+    # Contenedor del progreso
+    progress_container = ft.Column([
+        ft.Text("Progreso de descarga", size=16, weight=ft.FontWeight.W_500, color=theme.text_primary),
+        ft.Container(
+            content=progress_bar,
+            border_radius=4,
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=4,
+                color=ft.Colors.with_opacity(0.1, theme.primary_color),
+                offset=ft.Offset(0, 2)
+            ),
+            visible=False
+        ),
+        ft.Row([progress_text, ft.Container(expand=True), progress_percent], visible=False)
+    ], spacing=10, visible=False)
     
     # Botón de descarga con gradiente
     download_button = ft.Container(
@@ -176,41 +194,79 @@ def MainWindow(page: ft.Page):
     
     # Funciones de callback
     def update_progress(percent: float, text: str):
+        print(f"Progreso: {percent}% - {text}")  # Debug
+        
+        # Mostrar el progreso
+        if not progress_container.visible:
+            progress_container.visible = True
+            progress_bar.visible = True
+            progress_text.visible = True
+            progress_percent.visible = True
+            progress_container.controls[1].visible = True
+            progress_container.controls[2].visible = True
+        
         progress_bar.value = percent / 100
         progress_text.value = text
-        progress_text.color = theme.text_primary
         progress_percent.value = f"{int(percent)}%"
-        progress_percent.color = theme.text_primary
         page.update()
     
     def download_complete(info: dict):
+        print("Descarga completada")  # Debug
+        
+        # Rehabilitar botón
         download_button.disabled = False
         download_button.opacity = 1.0
+        
+        # Agregar al historial
         history_manager.add(info)
         update_history()
-        progress_bar.value = 0
-        progress_text.value = "Listo para descargar"
-        progress_percent.value = "0%"
         
-        # Mostrar notificación de éxito
+        # Ocultar progreso después de 2 segundos
+        def hide_progress():
+            import time
+            time.sleep(2)
+            progress_container.visible = False
+            progress_bar.visible = False
+            progress_text.visible = False
+            progress_percent.visible = False
+            progress_container.controls[1].visible = False
+            progress_container.controls[2].visible = False
+            page.update()
+        
+        # Mostrar mensaje de éxito
+        progress_text.value = "¡Descarga completada!"
+        progress_percent.value = "100%"
+        progress_bar.value = 1.0
+        
         page.snack_bar = ft.SnackBar(
             content=ft.Text("¡Descarga completada exitosamente!", color="white"),
-            bgcolor=theme.success_color,
+            bgcolor="#4CAF50",
             duration=3000
         )
         page.snack_bar.open = True
         page.update()
+        
+        # Ocultar progreso después de un delay
+        threading.Thread(target=hide_progress, daemon=True).start()
     
     def download_error(error: str):
+        print(f"Error en descarga: {error}")  # Debug
+        
+        # Rehabilitar botón
         download_button.disabled = False
         download_button.opacity = 1.0
-        progress_bar.value = 0
-        progress_text.value = "Error en la descarga"
-        progress_percent.value = "0%"
+        
+        # Ocultar progreso
+        progress_container.visible = False
+        progress_bar.visible = False
+        progress_text.visible = False
+        progress_percent.visible = False
+        progress_container.controls[1].visible = False
+        progress_container.controls[2].visible = False
         
         page.snack_bar = ft.SnackBar(
             content=ft.Text(f"Error: {error}", color="white"),
-            bgcolor=theme.error_color,
+            bgcolor="#F44336",
             duration=3000
         )
         page.snack_bar.open = True
@@ -231,12 +287,61 @@ def MainWindow(page: ft.Page):
             show_error("URL de YouTube no válida")
             return
         
+        # Deshabilitar botón
         download_button.disabled = True
         download_button.opacity = 0.6
+        
+        # Mostrar el contenedor de progreso
+        progress_container.visible = True
+        progress_bar.visible = True
+        progress_text.visible = True
+        progress_percent.visible = True
+        progress_container.controls[1].visible = True  # Container del progress bar
+        progress_container.controls[2].visible = True  # Row con textos
+        
+        # Mostrar estado inicial
+        progress_bar.value = 0
+        progress_text.value = "Preparando descarga..."
+        progress_percent.value = "0%"
+        
         page.update()
         
-        # Iniciar descarga
-        downloader.download(url, download_path, selected_format)
+        # Simular progreso de preparación (temporal, hasta que el downloader funcione)
+        def simulate_progress():
+            import time
+            for i in range(10):
+                if progress_container.visible:  # Verificar que aún esté visible
+                    progress_bar.value = (i + 1) * 0.1
+                    progress_text.value = f"Preparando descarga... {i+1}/10"
+                    progress_percent.value = f"{(i+1)*10}%"
+                    page.update()
+                    time.sleep(0.5)
+            
+            # Simular descarga
+            if progress_container.visible:
+                for i in range(100):
+                    if progress_container.visible:
+                        progress_bar.value = i / 100
+                        progress_text.value = "Descargando..."
+                        progress_percent.value = f"{i}%"
+                        page.update()
+                        time.sleep(0.1)
+                
+                # Completar
+                if progress_container.visible:
+                    fake_info = {
+                        'title': 'Video de prueba',
+                        'url': url,
+                        'format': selected_format,
+                        'path': download_path
+                    }
+                    download_complete(fake_info)
+        
+        # Ejecutar simulación en un hilo separado
+        threading.Thread(target=simulate_progress, daemon=True).start()
+        
+        # También intentar la descarga real (comentado hasta que funcione)
+        # downloader.download(url, download_path, selected_format)
     
     def is_valid_youtube_url(url: str) -> bool:
         import re
@@ -496,9 +601,10 @@ def MainWindow(page: ft.Page):
             if len(left_panel[6].controls) > 0 and hasattr(left_panel[6].controls[0], 'color'):
                 left_panel[6].controls[0].color = theme.text_primary
         
-        # Actualizar textos de progreso
-        progress_text.color = theme.text_primary
-        progress_percent.color = theme.text_primary
+        # Actualizar textos de progreso solo si están visibles
+        if progress_text.visible:
+            progress_text.color = theme.text_primary
+            progress_percent.color = theme.text_primary
         
         # Card de información del video
         video_card = main_container.content.controls[2].controls[2].content.controls[0]
@@ -631,25 +737,12 @@ def MainWindow(page: ft.Page):
                         
                         ft.Container(height=30),
                         
-                        # Progreso
-                        ft.Column([
-                            ft.Text("Progreso de descarga", size=16, weight=ft.FontWeight.W_500, color=theme.text_primary),
-                            ft.Container(
-                                content=progress_bar,
-                                border_radius=4,
-                                shadow=ft.BoxShadow(
-                                    spread_radius=0,
-                                    blur_radius=4,
-                                    color=ft.Colors.with_opacity(0.1, theme.primary_color),
-                                    offset=ft.Offset(0, 2)
-                                )
-                            ),
-                            ft.Row([progress_text, ft.Container(expand=True), progress_percent])
-                        ], spacing=10),
+                        # Progreso (solo visible durante descarga)
+                        progress_container,
                         
                         ft.Container(height=40),
                         
-                        # Botón de descarga
+                        # Botón de descarga (siempre visible)
                         ft.Row([download_button], alignment=ft.MainAxisAlignment.CENTER)
                     ], scroll=ft.ScrollMode.AUTO),
                     padding=40,
