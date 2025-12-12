@@ -396,8 +396,7 @@ def MainWindow(page: ft.Page):
             progress_container,
             ft.Container(height=10),
             ft.Column([download_btn], horizontal_alignment=ft.CrossAxisAlignment.STRETCH), # Full width button
-            ft.Container(height=20),
-            video_info_card
+            ft.Container(height=20)
         ], scroll=ft.ScrollMode.HIDDEN),
         padding=30,
         bgcolor=theme.surface_color,
@@ -435,7 +434,10 @@ def MainWindow(page: ft.Page):
         
         # Content
         ft.Column(col={"sm": 12, "md": 7, "lg": 8}, controls=[download_panel]),
-        ft.Column(col={"sm": 12, "md": 5, "lg": 4}, controls=[history_panel]),
+        ft.Column(col={"sm": 12, "md": 5, "lg": 4}, controls=[
+            video_info_card,
+            history_panel
+        ]),
     ])
 
     # Initial Init
