@@ -10,6 +10,7 @@ from src.ui.components import ModernButton, StatusChip, TooltipIconButton
 # History Logic (kept simple in this file for portability)
 import json
 from datetime import datetime
+import subprocess # Added for explorer selection
 
 class SimpleHistory:
     def __init__(self):
@@ -212,7 +213,13 @@ def MainWindow(page: ft.Page):
     )
 
     # History List
-    history_list = ft.ListView(expand=True, spacing=10, padding=10)
+    # Height calculation: ~60px per item * 3.5 items = ~210px
+    history_list = ft.ListView(
+        height=220, 
+        spacing=10, 
+        padding=10,
+        expand=False # Don't expand to fill, use fixed height
+    )
 
     # --- Logic ---
 
@@ -394,8 +401,8 @@ def MainWindow(page: ft.Page):
                     ft.Text(f"{item['format'].upper()} • {item['date']}", color=theme.text_secondary, size=11)
                 ], expand=True, spacing=2),
                 ft.IconButton(ft.Icons.FOLDER_OPEN, icon_color=theme.text_secondary, icon_size=18, 
-                    tooltip="Abrir carpeta", 
-                    on_click=lambda e: os.startfile(os.path.dirname(item['path'])) if os.path.exists(item['path']) else None
+                    tooltip="Mostrar en carpeta", 
+                    on_click=lambda e: open_file_in_explorer(item['path'])
                 )
             ], spacing=10),
             padding=10,
@@ -416,6 +423,14 @@ def MainWindow(page: ft.Page):
             download_path = e.path
             folder_field.value = e.path
             page.update()
+            
+    def open_file_in_explorer(path):
+        if os.path.exists(path):
+            try:
+                # normalize path to windows format
+                path = os.path.normpath(path)
+                subprocess.Popen(['explorer', '/select,', path])
+            except: pass
 
     # --- Layout (Responsive) ---
     
