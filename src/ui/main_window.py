@@ -57,7 +57,10 @@ def MainWindow(page: ft.Page):
     
     # --- Status & Feedback State ---
     
+    # --- Status & Feedback State ---
+    
     status_chip = StatusChip(theme)
+    main_container = None # Placeholder for closure access
     
     # --- UI Components ---
 
@@ -238,6 +241,42 @@ def MainWindow(page: ft.Page):
         
         # Refresh history
         update_history_list()
+        
+        # Update panels and container if they exist
+        if download_panel:
+            download_panel.bgcolor = theme.surface_color
+            download_panel.shadow.color = theme.shadow_color
+            download_panel.update()
+            
+        if history_panel:
+            history_panel.bgcolor = theme.bg_color
+            history_panel.update()
+            
+        if video_info_card:
+            video_info_card.border = ft.border.all(1, ft.Colors.with_opacity(0.1, theme.border_color))
+            video_info_card.update()
+            
+        if main_container:
+            main_container.gradient.colors = [theme.bg_color, theme.bg_color]
+            main_container.update()
+            
+        # Update text labels
+        header_download.color = theme.text_primary
+        header_download.update()
+        
+        header_history.color = theme.text_primary
+        header_history.update()
+        
+        label_format.color = theme.text_secondary
+        label_format.update()
+        
+        label_save.color = theme.text_secondary
+        label_save.update()
+        
+        # Update Video Info Card Text
+        video_title.color = theme.text_primary
+        video_author.color = theme.text_secondary
+        video_info_card.update()
 
     def select_format(value):
         nonlocal selected_format
@@ -381,16 +420,20 @@ def MainWindow(page: ft.Page):
     # --- Layout (Responsive) ---
     
     # Left Panel (Download)
+    header_download = ft.Text("Descargar Video", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary)
+    label_format = ft.Text("Formato", color=theme.text_secondary, size=13, weight=ft.FontWeight.BOLD)
+    label_save = ft.Text("Guardar en", color=theme.text_secondary, size=13, weight=ft.FontWeight.BOLD)
+
     download_panel = ft.Container(
         content=ft.Column([
-            ft.Text("Descargar Video", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary),
+            header_download,
             ft.Container(height=10),
             url_field,
             ft.Container(height=10),
-            ft.Text("Formato", color=theme.text_secondary, size=13, weight=ft.FontWeight.BOLD),
+            label_format,
             format_row,
             ft.Container(height=10),
-            ft.Text("Guardar en", color=theme.text_secondary, size=13, weight=ft.FontWeight.BOLD),
+            label_save,
             ft.Row([folder_field, folder_btn]),
             ft.Container(height=20),
             progress_container,
@@ -405,11 +448,13 @@ def MainWindow(page: ft.Page):
     )
     
     # Right Panel (History)
+    header_history = ft.Text("Historial", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary)
+    
     history_panel = ft.Container(
         content=ft.Column([
             ft.Row([
                 ft.Icon(ft.Icons.HISTORY, color=theme.text_primary),
-                ft.Text("Historial", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary)
+                header_history
             ], spacing=10),
             ft.Divider(color=theme.border_color),
             history_list
@@ -442,7 +487,9 @@ def MainWindow(page: ft.Page):
 
     # Initial Init
     # update_ui_colors() # Removed to prevent crash on startup (controls not yet on page)
-    return ft.Container(
+    
+    # Assign to closure variable
+    main_container = ft.Container(
         content=layout,
         expand=True,
         gradient=ft.LinearGradient(
@@ -452,3 +499,5 @@ def MainWindow(page: ft.Page):
         ),
         padding=10
     )
+    
+    return main_container

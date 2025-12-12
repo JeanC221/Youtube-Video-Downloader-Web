@@ -45,7 +45,7 @@ class AppTheme:
             
         else:
             # Tema claro PREMIUM - Clean White & Soft Gradients
-            self.bg_color = "#F8FAFC"
+            self.bg_color = "#F1F5F9" # Slight gray for better card contrast
             self.surface_color = "#FFFFFF"
             self.card_color = "#FFFFFF"
             
