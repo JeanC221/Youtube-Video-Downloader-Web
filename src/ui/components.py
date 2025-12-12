@@ -1,268 +1,151 @@
 import flet as ft
 from typing import Callable, Optional
 
-class ModernButton(ft.Control):
+# --- Custom Components ---
+
+class StatusChip(ft.Container):
+    def __init__(self, theme):
+        super().__init__()
+        self.theme = theme
+        self._status = "ready" # ready, working, done, error
+        
+        self.icon_map = {
+            "ready": ft.Icons.CHECK_CIRCLE_OUTLINE,
+            "working": ft.Icons.DOWNLOADING,
+            "done": ft.Icons.CHECK_CIRCLE,
+            "error": ft.Icons.ERROR_OUTLINE
+        }
+        
+        self.text_map = {
+            "ready": "Listo",
+            "working": "Procesando...",
+            "done": "Completado",
+            "error": "Error"
+        }
+        
+        self.color_map = {
+            "ready": theme.text_secondary,
+            "working": theme.primary_color,
+            "done": theme.success_color,
+            "error": theme.error_color
+        }
+        
+        # Initial state
+        self.status_icon = ft.Icon(self.icon_map["ready"], size=16, color=self.color_map["ready"])
+        self.status_text = ft.Text(self.text_map["ready"], size=12, color=self.color_map["ready"], weight=ft.FontWeight.W_500)
+        
+        self.content = ft.Row(
+            [self.status_icon, self.status_text],
+            spacing=5,
+            alignment=ft.MainAxisAlignment.CENTER
+        )
+        
+        self.padding = ft.padding.symmetric(horizontal=12, vertical=6)
+        self.border_radius = 20
+        self.bgcolor = ft.Colors.with_opacity(0.1, self.color_map["ready"])
+        self.border = ft.border.all(1, ft.Colors.with_opacity(0.2, self.color_map["ready"]))
+        self.animate = ft.Animation(300, "easeOut")
+        
+    def set_status(self, status: str, custom_text: str = None):
+        if status not in self.icon_map: return
+        
+        self._status = status
+        color = self.color_map[status]
+        
+        # Update styling
+        self.bgcolor = ft.Colors.with_opacity(0.1, color)
+        self.border = ft.border.all(1, ft.Colors.with_opacity(0.2, color))
+        
+        # Update content
+        self.status_icon.name = self.icon_map[status]
+        self.status_icon.color = color
+        self.status_text.value = custom_text if custom_text else self.text_map[status]
+        self.status_text.color = color
+        
+        self.update()
+
+class ModernButton(ft.Container):
     def __init__(
         self,
         text: str,
         on_click: Optional[Callable] = None,
-        icon: Optional[ft.icons] = None,
+        icon: str = None, # Expect string name like ft.Icons.DOWNLOAD
         width: Optional[int] = None,
         height: int = 50,
         gradient_colors: list = None,
-        disabled: bool = False
+        disabled: bool = False,
+        tooltip: str = None
     ):
         super().__init__()
         self.text = text
-        self.on_click = on_click
-        self.icon = icon
+        self.base_on_click = on_click
+        self.icon_name = icon
         self.width = width
         self.height = height
         self.gradient_colors = gradient_colors or ["#ec4899", "#a855f7"]
-        self.disabled = disabled
+        self.is_disabled = disabled
+        self.tooltip = tooltip
         self._scale = 1.0
-    
-    def build(self):
-        content = []
         
-        if self.icon:
-            content.append(
-                ft.Icon(self.icon, color="white", size=20)
-            )
-            content.append(ft.Container(width=8))
-        
-        content.append(
-            ft.Text(
-                self.text,
-                size=16,
-                weight=ft.FontWeight.BOLD,
-                color="white"
-            )
-        )
-        
-        return ft.Container(
-            content=ft.Row(
-                content,
-                alignment=ft.MainAxisAlignment.CENTER,
-                spacing=0
-            ),
-            width=self.width,
-            height=self.height,
-            gradient=ft.LinearGradient(
-                colors=self.gradient_colors,
-                begin=ft.alignment.center_left,
-                end=ft.alignment.center_right
-            ),
-            border_radius=self.height // 2,
-            on_click=self._handle_click if not self.disabled else None,
-            on_hover=self._on_hover,
-            animate=ft.animation.Animation(200, ft.AnimationCurve.EASE_OUT),
-            animate_scale=ft.animation.Animation(150, ft.AnimationCurve.EASE_OUT),
-            scale=self._scale,
-            opacity=0.5 if self.disabled else 1.0,
-            shadow=ft.BoxShadow(
-                spread_radius=1,
-                blur_radius=10,
-                color=ft.colors.with_opacity(0.3, self.gradient_colors[0]),
-                offset=ft.Offset(0, 4)
-            )
-        )
-    
-    def _handle_click(self, e):
-        if self.on_click:
-            self.scale = 0.95
-            self.update()
-            self.page.run_task(self._reset_scale)
-            self.on_click(e)
-    
-    async def _reset_scale(self):
-        await self.page.sleep(0.1)
-        self.scale = 1.0
-        self.update()
-    
-    def _on_hover(self, e):
-        if not self.disabled:
-            self.scale = 1.05 if e.data == "true" else 1.0
-            self.update()
-    
-    @property
-    def scale(self):
-        return self._scale
-    
-    @scale.setter
-    def scale(self, value):
-        self._scale = value
-        if hasattr(self, 'controls') and self.controls:
-            self.controls[0].scale = value
-
-
-class InfoCard(ft.Control):
-    def __init__(
-        self,
-        title: str,
-        theme,
-        content: Optional[ft.Control] = None,
-        icon: Optional[ft.icons] = None,
-        elevation: int = 2
-    ):
-        super().__init__()
-        self.title = title
-        self.theme = theme
-        self.content = content
-        self.icon = icon
-        self.elevation = elevation
-    
-    def build(self):
-        header_content = []
-        
-        if self.icon:
-            header_content.append(
-                ft.Icon(
-                    self.icon,
-                    color=self.theme.primary_color,
-                    size=24
-                )
-            )
-            header_content.append(ft.Container(width=10))
-        
-        header_content.append(
-            ft.Text(
-                self.title,
-                size=18,
-                weight=ft.FontWeight.BOLD,
-                color=self.theme.text_primary
-            )
-        )
-        
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.Row(header_content),
-                    ft.Divider(color=self.theme.border_color),
-                    self.content or ft.Container()
-                ], spacing=10),
-                padding=20,
-                bgcolor=self.theme.card_color
-            ),
-            elevation=self.elevation,
-            color=self.theme.card_color
-        )
-
-
-class AnimatedProgressBar(ft.Control):
-    def __init__(self, theme):
-        super().__init__()
-        self.theme = theme
-        self._progress = 0
-        self._text = "Listo para descargar"
-    
-    def build(self):
-        self.progress_bar = ft.ProgressBar(
-            value=0,
-            height=8,
-            color=self.theme.primary_color,
-            bgcolor=self.theme.border_color,
-            border_radius=4
-        )
-        
-        self.progress_text = ft.Text(
-            self._text,
-            size=14,
-            color=self.theme.text_secondary
-        )
-        
-        return ft.Column([
-            ft.Container(
-                content=self.progress_bar,
-                border_radius=4,
-                shadow=ft.BoxShadow(
-                    spread_radius=0,
-                    blur_radius=4,
-                    color=ft.colors.with_opacity(0.1, self.theme.primary_color),
-                    offset=ft.Offset(0, 2)
-                )
-            ),
-            ft.Container(height=5),
-            ft.Row([
-                self.progress_text,
-                ft.Container(expand=True),
-                ft.Text(
-                    f"{int(self._progress * 100)}%",
-                    size=14,
-                    weight=ft.FontWeight.BOLD,
-                    color=self.theme.primary_color
-                )
-            ])
-        ])
-    
-    def update_progress(self, value: float, text: str = None):
-        self._progress = value
-        self.progress_bar.value = value
+        # Build content
+        content_items = []
+        if self.icon_name:
+            content_items.append(ft.Icon(self.icon_name, color="white", size=20))
+            if text: content_items.append(ft.Container(width=8))
         
         if text:
-            self._text = text
-            self.progress_text.value = text
+            content_items.append(ft.Text(self.text, size=16, weight=ft.FontWeight.BOLD, color="white"))
+            
+        self.content = ft.Row(content_items, alignment=ft.MainAxisAlignment.CENTER, spacing=0)
         
-        if hasattr(self, 'controls') and self.controls:
-            percentage_text = self.controls[0].content.controls[2].controls[2]
-            percentage_text.value = f"{int(value * 100)}%"
+        # Styling
+        self.gradient = ft.LinearGradient(
+            colors=self.gradient_colors,
+            begin=ft.alignment.center_left,
+            end=ft.alignment.center_right
+        )
+        self.border_radius = self.height // 2
+        self.on_click = self._handle_click if not disabled else None
+        self.on_hover = self._on_hover
+        self.animate_scale = ft.Animation(100, "easeOut")
+        self.scale = 1.0
+        self.opacity = 0.6 if disabled else 1.0
+        self.shadow = ft.BoxShadow(
+            blur_radius=10,
+            color=ft.Colors.with_opacity(0.3, self.gradient_colors[0]),
+            offset=ft.Offset(0, 4)
+        )
+        self.ink = True
         
+    def _handle_click(self, e):
+        if self.base_on_click:
+            self.scale = 0.95
+            self.update()
+            import threading
+            def reset():
+                import time
+                time.sleep(0.1)
+                self.scale = 1.0
+                self.update()
+            threading.Thread(target=reset, daemon=True).start()
+            self.base_on_click(e)
+            
+    def _on_hover(self, e):
+        if not self.is_disabled:
+            self.scale = 1.02 if e.data == "true" else 1.0
+            self.update()
+            
+    def set_disabled(self, disabled: bool):
+        self.is_disabled = disabled
+        self.opacity = 0.6 if disabled else 1.0
+        self.on_click = None if disabled else self._handle_click
         self.update()
 
-
-class HistoryItem(ft.Control):
-    def __init__(self, entry: dict, theme, on_redownload: Callable):
+class TooltipIconButton(ft.IconButton):
+    def __init__(self, icon, on_click, tooltip, theme, icon_color=None):
         super().__init__()
-        self.entry = entry
-        self.theme = theme
-        self.on_redownload = on_redownload
-    
-    def build(self):
-        format_icon = ft.icons.MUSIC_NOTE if self.entry.get('format') == 'mp3' else ft.icons.VIDEO_FILE
-        format_color = self.theme.accent_color if self.entry.get('format') == 'mp3' else self.theme.primary_color
-        
-        title = self.entry.get('title', 'Desconocido')
-        if len(title) > 35:
-            title = title[:32] + "..."
-        
-        return ft.Container(
-            content=ft.Row([
-                ft.Container(
-                    content=ft.Icon(format_icon, color=format_color, size=20),
-                    bgcolor=ft.colors.with_opacity(0.1, format_color),
-                    padding=10,
-                    border_radius=10
-                ),
-                
-                ft.Column([
-                    ft.Text(
-                        title,
-                        size=14,
-                        weight=ft.FontWeight.W_500,
-                        color=self.theme.text_primary
-                    ),
-                    ft.Text(
-                        f"{self.entry.get('format', '').upper()} • {self.entry.get('date', '')}",
-                        size=12,
-                        color=self.theme.text_secondary
-                    )
-                ], spacing=2, expand=True),
-                
-                ft.IconButton(
-                    icon=ft.icons.DOWNLOAD,
-                    icon_color=self.theme.primary_color,
-                    icon_size=18,
-                    tooltip="Descargar de nuevo",
-                    on_click=lambda _: self.on_redownload(self.entry.get('url', ''))
-                )
-            ], spacing=15),
-            padding=ft.padding.all(15),
-            bgcolor=self.theme.surface_color,
-            border_radius=12,
-            on_hover=self._on_hover,
-            animate=ft.animation.Animation(200, ft.AnimationCurve.EASE_OUT)
-        )
-    
-    def _on_hover(self, e):
-        e.control.bgcolor = self.theme.hover_color if e.data == "true" else self.theme.surface_color
-        e.control.update()
+        self.icon = icon
+        self.on_click = on_click
+        self.tooltip = tooltip
+        self.icon_color = icon_color or theme.text_secondary
+        self.selected_icon_color = theme.primary_color

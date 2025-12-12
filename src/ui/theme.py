@@ -1,52 +1,85 @@
 import flet as ft
 
 class AppTheme:
-    def __init__(self, is_dark=False):
+    def __init__(self, is_dark=True):
         self.is_dark = is_dark
         self._define_colors()
     
     def _define_colors(self):
         if self.is_dark:
-            # Tema oscuro
-            self.bg_color = "#0f172a"
-            self.surface_color = "#1e293b"
+            # Tema oscuro PREMIUM - Deep Navy & Electric Blue/Pink
+            self.bg_color = "#0B1120"  # Muy oscuro, casi negro
+            self.surface_color = "#1E293B" # Grises azulados
             self.card_color = "#334155"
-            self.primary_color = "#ec4899"
-            self.primary_gradient = ["#ec4899", "#a855f7"]
-            self.secondary_color = "#8b5cf6"
-            self.accent_color = "#06b6d4"
-            self.text_primary = "#f1f5f9"
-            self.text_secondary = "#94a3b8"
-            self.text_disabled = "#64748b"
-            self.border_color = "#475569"
-            self.hover_color = "#475569"
-            self.error_color = "#ef4444"
-            self.success_color = "#10b981"
-            self.warning_color = "#f59e0b"
-            self.info_color = "#3b82f6"
-            self.shadow_color = "rgba(0,0,0,0.7)"
-            self.overlay_color = "rgba(0,0,0,0.5)"
+            
+            # Gradientes y acentos
+            self.primary_color = "#F472B6" # Pink 400
+            self.secondary_color = "#22D3EE" # Cyan 400
+            self.accent_color = "#818CF8" # Indigo 400
+            
+            self.primary_gradient = [
+                "#EC4899",  # Pink 500
+                "#9333EA",  # Purple 600
+                "#4F46E5",  # Indigo 600
+            ]
+            
+            # Texto
+            self.text_primary = "#F8FAFC"
+            self.text_secondary = "#94A3B8"
+            self.text_disabled = "#475569"
+            
+            # UI Elements
+            self.border_color = "#334155"
+            self.hover_color = "#334155"
+            self.input_bgcolor = "#1E293B"
+            
+            # Estados
+            self.error_color = "#EF4444"
+            self.success_color = "#10B981"
+            self.warning_color = "#F59E0B"
+            self.info_color = "#3B82F6"
+            
+            # Missing attributes fixed
+            self.shadow_color = ft.Colors.with_opacity(0.5, "#000000")
+            self.overlay_color = ft.Colors.with_opacity(0.5, "#000000")
+            
         else:
-            # Tema claro
-            self.bg_color = "#ffffff"
-            self.surface_color = "#f8fafc"
-            self.card_color = "#ffffff"
-            self.primary_color = "#ec4899"
-            self.primary_gradient = ["#ec4899", "#a855f7"]
-            self.secondary_color = "#8b5cf6"
-            self.accent_color = "#06b6d4"
-            self.text_primary = "#1e293b"
-            self.text_secondary = "#64748b"
-            self.text_disabled = "#94a3b8"
-            self.border_color = "#e2e8f0"
-            self.hover_color = "#f1f5f9"
-            self.error_color = "#ef4444"
-            self.success_color = "#10b981"
-            self.warning_color = "#f59e0b"
-            self.info_color = "#3b82f6"
-            self.shadow_color = "rgba(0,0,0,0.1)"
-            self.overlay_color = "rgba(0,0,0,0.3)"
-    
+            # Tema claro PREMIUM - Clean White & Soft Gradients
+            self.bg_color = "#F8FAFC"
+            self.surface_color = "#FFFFFF"
+            self.card_color = "#FFFFFF"
+            
+            # Gradientes y acentos
+            self.primary_color = "#EC4899"
+            self.secondary_color = "#06B6D4"
+            self.accent_color = "#6366F1"
+            
+            self.primary_gradient = [
+                "#EC4899",  # Pink 500
+                "#A855F7",  # Purple 500
+                "#6366F1",  # Indigo 500
+            ]
+            
+            # Texto
+            self.text_primary = "#0F172A"
+            self.text_secondary = "#64748B"
+            self.text_disabled = "#CBD5E1"
+            
+            # UI Elements
+            self.border_color = "#E2E8F0"
+            self.hover_color = "#F1F5F9"
+            self.input_bgcolor = "#F1F5F9"
+            
+            # Estados
+            self.error_color = "#EF4444"
+            self.success_color = "#10B981"
+            self.warning_color = "#F59E0B"
+            self.info_color = "#3B82F6"
+            
+            # Missing attributes fixed
+            self.shadow_color = ft.Colors.with_opacity(0.1, "#000000")
+            self.overlay_color = ft.Colors.with_opacity(0.3, "#000000")
+
     def toggle(self):
         self.is_dark = not self.is_dark
         self._define_colors()

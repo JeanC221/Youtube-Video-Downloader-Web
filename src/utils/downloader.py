@@ -2,6 +2,7 @@ import threading
 import re
 from datetime import datetime
 from yt_dlp import YoutubeDL
+import imageio_ffmpeg
 
 class YouTubeDownloader:
     def __init__(self, callback_progress=None, callback_complete=None, callback_error=None):
@@ -51,7 +52,8 @@ class YouTubeDownloader:
                 ydl_opts = {
                     'outtmpl': f'{output_path}/%(title)s.%(ext)s',
                     'progress_hooks': [self._progress_hook],
-                    'noplaylist': True
+                    'noplaylist': True,
+                    'ffmpeg_location': imageio_ffmpeg.get_ffmpeg_exe()
                 }
                 
                 # Formato

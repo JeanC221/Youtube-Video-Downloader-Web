@@ -1,14 +1,15 @@
 import os
 import threading
 import urllib.request
-from io import BytesIO
-from PIL import Image
+import time
 import flet as ft
-import json
-from datetime import datetime
-
 from src.ui.theme import AppTheme
 from src.utils.downloader import YouTubeDownloader
+from src.ui.components import ModernButton, StatusChip, TooltipIconButton
+
+# History Logic (kept simple in this file for portability)
+import json
+from datetime import datetime
 
 class SimpleHistory:
     def __init__(self):
@@ -20,844 +21,432 @@ class SimpleHistory:
             if os.path.exists(self.history_file):
                 with open(self.history_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
-        except Exception as e:
-            print(f"Error al cargar historial: {e}")
-        return []
+        except:
+            return []
     
     def _save_history(self):
         try:
             with open(self.history_file, 'w', encoding='utf-8') as f:
                 json.dump(self.history, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            print(f"Error al guardar historial: {e}")
+        except:
+            pass
     
     def add(self, info):
+        # Remove duplicates
+        self.history = [h for h in self.history if h.get('url') != info.get('url')]
         entry = {
             'title': info.get('title', 'Desconocido'),
             'url': info.get('url', ''),
             'format': info.get('format', 'mp4'),
             'date': datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'path': info.get('path', '')
+            'path': info.get('path', ''),
+            'thumbnail': info.get('thumbnail', '')
         }
         self.history.insert(0, entry)
-        self.history = self.history[:50]  # Mantener solo 50
+        self.history = self.history[:50]
         self._save_history()
-    
-    def clear(self):
-        """Limpiar todo el historial"""
-        print("Limpiando historial...")  # Debug
-        self.history = []
-        self._save_history()
-        print(f"Historial después de limpiar: {len(self.history)} items")  # Debug
 
 def MainWindow(page: ft.Page):
-    """Ventana principal como función en lugar de clase"""
     theme = AppTheme()
-    
-    # Inicializar componentes
     downloader = YouTubeDownloader()
-    history_manager = SimpleHistory()  # Usar la clase simple
+    history_manager = SimpleHistory()
     
-    # Variables de estado
+    # State
     download_path = os.path.join(os.path.expanduser("~"), "Downloads")
     selected_format = "mp4"
     
-    # Crear componentes UI
+    # --- Status & Feedback State ---
+    
+    status_chip = StatusChip(theme)
+    
+    # --- UI Components ---
+
+    # Header
+    title_text = ft.Text(
+        "YouTube Downloader", 
+        size=24, 
+        weight=ft.FontWeight.BOLD, 
+        color=theme.text_primary
+    )
+    
+    theme_btn = ft.IconButton(
+        icon=ft.Icons.DARK_MODE if not theme.is_dark else ft.Icons.LIGHT_MODE,
+        icon_color=theme.text_primary,
+        tooltip="Cambiar tema",
+        on_click=lambda e: toggle_theme(e)
+    )
+
+    # Input Area
     url_field = ft.TextField(
         label="URL del Video",
         hint_text="https://youtube.com/watch?v=...",
         prefix_icon=ft.Icons.LINK,
         border_radius=12,
+        bgcolor=theme.input_bgcolor,
+        border_color=ft.Colors.TRANSPARENT,
+        focused_border_color=theme.primary_color,
+        text_size=15,
+        color=theme.text_primary,
         filled=True,
-        expand=True
+        expand=True,
+        on_change=lambda e: on_url_change(e),
+        tooltip="Pega aquí el enlace del video de YouTube"
     )
-    
-    # Selector de formato con chips personalizados
+
+    def paste_from_clipboard(e):
+        # Flet doesn't have direct clipboard read efficiently in all versions/platforms roughly
+        # but we can try basic python functionality or just rely on user CTRL+V
+        pass # Placeholder for button placement
+
+    # Format Chips
     format_chips = []
     
-    def create_format_chip(label, value, icon, is_selected=False):
-        chip = ft.Chip(
-            label=ft.Text(label),
-            leading=ft.Icon(icon),
-            selected=is_selected,
-            on_click=lambda e: select_format(value, e.control)
+    def create_format_chip(label, value, icon):
+        is_selected = (value == selected_format)
+        bg_color = ft.Colors.with_opacity(0.15, theme.primary_color) if is_selected else theme.input_bgcolor
+        border_color = theme.primary_color if is_selected else ft.Colors.TRANSPARENT
+        icon_color = theme.primary_color if is_selected else theme.text_secondary
+        text_color = theme.text_primary if is_selected else theme.text_secondary
+        font_weight = ft.FontWeight.W_600 if is_selected else ft.FontWeight.NORMAL
+        
+        chip = ft.Container(
+            content=ft.Row([
+                ft.Icon(icon, size=18, color=icon_color),
+                ft.Text(label, color=text_color, weight=font_weight)
+            ], alignment=ft.MainAxisAlignment.CENTER, spacing=6),
+            padding=ft.padding.symmetric(horizontal=12, vertical=8),
+            border_radius=10,
+            bgcolor=bg_color,
+            border=ft.border.all(1, border_color),
+            on_click=lambda e: select_format(value),
+            animate=ft.Animation(200, "easeOut"),
+            data=value,
+            tooltip=f"Descargar en formato {label}"
         )
-        format_chips.append((value, chip))
+        format_chips.append(chip)
         return chip
     
-    def select_format(format_value, clicked_chip):
-        nonlocal selected_format
-        selected_format = format_value
-        for value, chip in format_chips:
-            chip.selected = (chip == clicked_chip)
-        page.update()
-    
     format_row = ft.Row([
-        create_format_chip("MP4 Video", "mp4", ft.Icons.VIDEO_FILE, True),
-        create_format_chip("MP3 Audio", "mp3", ft.Icons.AUDIO_FILE),
-        create_format_chip("Original", "original", ft.Icons.FILE_DOWNLOAD)
+        create_format_chip("MP4", "mp4", ft.Icons.VIDEO_FILE),
+        create_format_chip("MP3", "mp3", ft.Icons.MUSIC_NOTE),
+        create_format_chip("Original", "original", ft.Icons.FILE_DOWNLOAD),
     ], spacing=10)
-    
-    # Selector de carpeta
+
+    # Folder Selection
     folder_field = ft.TextField(
-        label="Carpeta de descarga",
+        label="Carpeta",
         value=download_path,
-        prefix_icon=ft.Icons.FOLDER,
+        prefix_icon=ft.Icons.FOLDER_OPEN,
         border_radius=12,
+        bgcolor=theme.input_bgcolor,
+        border_color=ft.Colors.TRANSPARENT,
+        text_size=14,
+        color=theme.text_secondary,
         filled=True,
         read_only=True,
-        expand=True
+        expand=True,
+        tooltip="Carpeta donde se guardarán los archivos"
     )
-    
-    def select_folder(e):
-        def handle_result(e: ft.FilePickerResultEvent):
-            if e.path:
-                nonlocal download_path
-                download_path = e.path
-                folder_field.value = e.path
-                page.update()
-        
-        file_picker = ft.FilePicker(on_result=handle_result)
-        page.overlay.append(file_picker)
-        page.update()
-        file_picker.get_directory_path(dialog_title="Seleccionar carpeta de descarga")
-    
-    browse_button = ft.IconButton(
-        icon=ft.Icons.FOLDER_OPEN,
-        tooltip="Seleccionar carpeta",
-        on_click=select_folder
+
+    folder_btn = TooltipIconButton(
+        icon=ft.Icons.DRIVE_FILE_MOVE,
+        tooltip="Cambiar carpeta",
+        on_click=lambda e: select_folder(e),
+        theme=theme
     )
-    
-    # Progress bar con estilo (inicialmente oculto)
+
+    # Progress
     progress_bar = ft.ProgressBar(
-        value=0,
-        height=8,
-        color=theme.primary_color,
-        bgcolor=theme.border_color,
-        visible=False
+        value=0, 
+        color=theme.primary_color, 
+        bgcolor=theme.input_bgcolor, 
+        height=6,
+        border_radius=3
     )
-    progress_text = ft.Text("", size=14, color=theme.text_primary, visible=False)
-    progress_percent = ft.Text("", size=14, weight=ft.FontWeight.BOLD, color=theme.text_primary, visible=False)
+    progress_info_text = ft.Text("Esperando...", size=12, color=theme.text_secondary)
+    progress_percent = ft.Text("0%", size=12, weight=ft.FontWeight.BOLD, color=theme.primary_color)
     
-    # Contenedor del progreso
     progress_container = ft.Column([
-        ft.Text("Progreso de descarga", size=16, weight=ft.FontWeight.W_500, color=theme.text_primary),
-        ft.Container(
-            content=progress_bar,
-            border_radius=4,
-            shadow=ft.BoxShadow(
-                spread_radius=0,
-                blur_radius=4,
-                color=ft.Colors.with_opacity(0.1, theme.primary_color),
-                offset=ft.Offset(0, 2)
-            ),
-            visible=False
-        ),
-        ft.Row([progress_text, ft.Container(expand=True), progress_percent], visible=False)
-    ], spacing=10, visible=False)
-    
-    # Botón de descarga con gradiente
-    download_button = ft.Container(
-        content=ft.Row([
-            ft.Icon(ft.Icons.DOWNLOAD, color="white", size=20),
-            ft.Text("Descargar Video", size=16, weight=ft.FontWeight.BOLD, color="white")
-        ], alignment=ft.MainAxisAlignment.CENTER, spacing=10),
-        gradient=ft.LinearGradient(
-            colors=theme.primary_gradient,
-            begin=ft.alignment.center_left,
-            end=ft.alignment.center_right
-        ),
-        width=300,
-        height=56,
-        border_radius=28,
+        ft.Row([progress_info_text, ft.Container(expand=True), progress_percent]),
+        progress_bar
+    ], spacing=5, visible=False)
+
+    # Download Button
+    download_btn = ModernButton(
+        text="DESCARGAR AHORA",
+        icon=ft.Icons.DOWNLOAD_ROUNDED,
+        gradient_colors=theme.primary_gradient,
         on_click=lambda e: start_download(),
-        ink=True
+        width=None, # Expand to container
+        height=54,
+        tooltip="Iniciar la descarga del video"
     )
+
+    # Video Info Skeleton/Card
+    video_img = ft.Image(src_base64=None, width=320, height=180, fit=ft.ImageFit.COVER, border_radius=12, visible=False)
+    video_placeholder = ft.Container(
+        content=ft.Column([
+            ft.Icon(ft.Icons.VIDEO_LIBRARY_OUTLINED, size=40, color=theme.text_disabled),
+            ft.Text("Vista previa", color=theme.text_disabled)
+        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        width=320, height=180, bgcolor=theme.input_bgcolor, border_radius=12, alignment=ft.alignment.center
+    )
+    video_title = ft.Text("...", size=16, weight=ft.FontWeight.BOLD, color=theme.text_primary, no_wrap=True)
+    video_author = ft.Text("...", size=14, color=theme.text_secondary)
     
-    # Panel de información del video
-    video_info_content = ft.Column([
-        ft.Container(
-            content=ft.Icon(ft.Icons.VIDEO_LIBRARY, color=theme.text_disabled, size=48),
-            alignment=ft.alignment.center,
-            padding=40
-        ),
-        ft.Text(
-            "Pega una URL para ver la información del video",
-            size=14,
-            color=theme.text_secondary,
-            text_align=ft.TextAlign.CENTER
-        )
-    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-    
-    # Lista de historial
-    history_list = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=10)
-    
-    # Funciones de callback
-    def update_progress(percent: float, text: str):
-        print(f"Progreso: {percent}% - {text}")  # Debug
-        
-        # Mostrar el progreso
-        if not progress_container.visible:
-            progress_container.visible = True
-            progress_bar.visible = True
-            progress_text.visible = True
-            progress_percent.visible = True
-            progress_container.controls[1].visible = True
-            progress_container.controls[2].visible = True
-        
-        progress_bar.value = percent / 100
-        progress_text.value = text
-        progress_percent.value = f"{int(percent)}%"
-        page.update()
-    
-    def download_complete(info: dict):
-        print("Descarga completada")  # Debug
-        
-        # Rehabilitar botón
-        download_button.disabled = False
-        download_button.opacity = 1.0
-        
-        # Agregar al historial
-        history_manager.add(info)
-        update_history()
-        
-        # Ocultar progreso después de 2 segundos
-        def hide_progress():
-            import time
-            time.sleep(2)
-            progress_container.visible = False
-            progress_bar.visible = False
-            progress_text.visible = False
-            progress_percent.visible = False
-            progress_container.controls[1].visible = False
-            progress_container.controls[2].visible = False
-            page.update()
-        
-        # Mostrar mensaje de éxito
-        progress_text.value = "¡Descarga completada!"
-        progress_percent.value = "100%"
-        progress_bar.value = 1.0
-        
-        page.snack_bar = ft.SnackBar(
-            content=ft.Text("¡Descarga completada exitosamente!", color="white"),
-            bgcolor="#4CAF50",
-            duration=3000
-        )
-        page.snack_bar.open = True
-        page.update()
-        
-        # Ocultar progreso después de un delay
-        threading.Thread(target=hide_progress, daemon=True).start()
-    
-    def download_error(error: str):
-        print(f"Error en descarga: {error}")  # Debug
-        
-        # Rehabilitar botón
-        download_button.disabled = False
-        download_button.opacity = 1.0
-        
-        # Ocultar progreso
-        progress_container.visible = False
-        progress_bar.visible = False
-        progress_text.visible = False
-        progress_percent.visible = False
-        progress_container.controls[1].visible = False
-        progress_container.controls[2].visible = False
-        
-        page.snack_bar = ft.SnackBar(
-            content=ft.Text(f"Error: {error}", color="white"),
-            bgcolor="#F44336",
-            duration=3000
-        )
-        page.snack_bar.open = True
-        page.update()
-    
-    # Configurar callbacks del downloader
-    downloader.callback_progress = update_progress
-    downloader.callback_complete = download_complete
-    downloader.callback_error = download_error
-    
-    def start_download():
-        url = url_field.value.strip()
-        if not url:
-            show_error("Por favor ingresa una URL")
-            return
-        
-        if not is_valid_youtube_url(url):
-            show_error("URL de YouTube no válida")
-            return
-        
-        # Deshabilitar botón
-        download_button.disabled = True
-        download_button.opacity = 0.6
-        
-        # Mostrar el contenedor de progreso
-        progress_container.visible = True
-        progress_bar.visible = True
-        progress_text.visible = True
-        progress_percent.visible = True
-        progress_container.controls[1].visible = True  # Container del progress bar
-        progress_container.controls[2].visible = True  # Row con textos
-        
-        # Mostrar estado inicial
-        progress_bar.value = 0
-        progress_text.value = "Preparando descarga..."
-        progress_percent.value = "0%"
-        
-        page.update()
-        
-        # Usar la descarga real en lugar de la simulación
-        def start_real_download():
-            try:
-                # Intentar descarga real
-                downloader.download(url, download_path, selected_format)
-            except Exception as e:
-                print(f"Error en descarga real: {e}")
-                # Si falla, usar simulación como fallback
-                simulate_download()
-        
-        def simulate_download():
-            import time
-            for i in range(10):
-                if progress_container.visible:
-                    progress_bar.value = (i + 1) * 0.1
-                    progress_text.value = f"Preparando descarga... {i+1}/10"
-                    progress_percent.value = f"{(i+1)*10}%"
-                    page.update()
-                    time.sleep(0.5)
-            
-            if progress_container.visible:
-                for i in range(100):
-                    if progress_container.visible:
-                        progress_bar.value = i / 100
-                        progress_text.value = "Descargando..."
-                        progress_percent.value = f"{i}%"
-                        page.update()
-                        time.sleep(0.1)
-                
-                if progress_container.visible:
-                    # Obtener información real del video para el historial
-                    def get_info_and_complete():
-                        def info_callback(info):
-                            if info:
-                                download_complete(info)
-                            else:
-                                fake_info = {
-                                    'title': 'Video descargado',
-                                    'url': url,
-                                    'format': selected_format,
-                                    'path': download_path
-                                }
-                                download_complete(fake_info)
-                        
-                        downloader.get_video_info(url, info_callback)
-                    
-                    threading.Thread(target=get_info_and_complete, daemon=True).start()
-        
-        # Ejecutar descarga en un hilo separado
-        threading.Thread(target=start_real_download, daemon=True).start()
-    
-    def is_valid_youtube_url(url: str) -> bool:
-        import re
-        pattern = r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.*'
-        return bool(re.match(pattern, url))
-    
-    def show_error(message: str):
-        page.snack_bar = ft.SnackBar(
-            content=ft.Text(message, color="white"),
-            bgcolor=theme.error_color,
-            duration=3000
-        )
-        page.snack_bar.open = True
-        page.update()
-    
-    def on_url_change(e):
-        url = e.control.value.strip()
-        if url and is_valid_youtube_url(url):
-            # Obtener información del video después de un delay
-            threading.Timer(1.0, lambda: fetch_video_info(url)).start()
-    
-    def fetch_video_info(url: str):
-        def update_ui(info):
-            if info:
-                display_video_info(info)
-        
-        downloader.get_video_info(url, update_ui)
-    
-    def display_video_info(info: dict):
-        title = info.get('title', 'Título desconocido')
-        duration = info.get('duration', 0)
-        uploader = info.get('uploader', 'Canal desconocido')
-        thumbnail_url = info.get('thumbnail', '')
-        
-        print(f"Mostrando info del video: {title}")  # Debug
-        print(f"URL de thumbnail: {thumbnail_url}")  # Debug
-        
-        # Formatear duración
-        minutes, seconds = divmod(duration, 60)
-        hours, minutes = divmod(minutes, 60)
-        duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes:02d}:{seconds:02d}"
-        
-        # Actualizar contenido con colores del tema actual
-        video_info_content.controls = [
-            ft.Container(
-                content=ft.Icon(ft.Icons.IMAGE, size=80, color=theme.text_disabled),
-                bgcolor=theme.surface_color,
-                width=320,
-                height=180,
-                border_radius=12,
-                alignment=ft.alignment.center
-            ),
-            ft.Container(height=15),
-            ft.Text(
-                title[:60] + "..." if len(title) > 60 else title,
-                size=16,
-                weight=ft.FontWeight.W_500,
-                color=theme.text_primary,
-                text_align=ft.TextAlign.CENTER
-            ),
-            ft.Container(height=10),
-            ft.Row([
-                ft.Row([
-                    ft.Icon(ft.Icons.PERSON, size=16, color=theme.text_secondary),
-                    ft.Text(uploader, size=14, color=theme.text_secondary)
-                ], spacing=5),
-                ft.Container(width=20),
-                ft.Row([
-                    ft.Icon(ft.Icons.ACCESS_TIME, size=16, color=theme.text_secondary),
-                    ft.Text(duration_str, size=14, color=theme.text_secondary)
-                ], spacing=5)
-            ], alignment=ft.MainAxisAlignment.CENTER)
-        ]
-        
-        page.update()
-        
-        # Cargar thumbnail si existe y es válida
-        if thumbnail_url and thumbnail_url.strip() and thumbnail_url.startswith(('http://', 'https://')):
-            print("Iniciando carga de thumbnail...")
-            threading.Thread(target=lambda: load_thumbnail(thumbnail_url), daemon=True).start()
-        else:
-            print("No hay URL de thumbnail válida para cargar")
-    
-    def load_thumbnail(url: str):
-        try:
-            print(f"Intentando cargar thumbnail desde: {url}")  # Debug
-            
-            if not url or url == '':
-                print("URL de thumbnail vacía")
-                return
-            
-            # Validar que la URL sea válida
-            if not url.startswith(('http://', 'https://')):
-                print(f"URL de thumbnail inválida: {url}")
-                return
-            
-            with urllib.request.urlopen(url, timeout=10) as response:
-                image_data = response.read()
-                print(f"Imagen descargada, tamaño: {len(image_data)} bytes")
-            
-            image = Image.open(BytesIO(image_data))
-            print(f"Imagen abierta, dimensiones: {image.size}")
-            
-            image = image.resize((320, 180), Image.Resampling.LANCZOS)
-            print("Imagen redimensionada")
-            
-            # Convertir a base64
-            import base64
-            # No importar BytesIO aquí porque ya está importado arriba
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            # Actualizar UI directamente (esto funciona mejor en Flet)
-            if video_info_content.controls and len(video_info_content.controls) > 0:
-                video_info_content.controls[0] = ft.Container(
-                    content=ft.Image(
-                        src_base64=img_str,
-                        width=320,
-                        height=180,
-                        fit=ft.ImageFit.COVER,
-                        border_radius=12
-                    ),
-                    bgcolor=theme.surface_color,
-                    border_radius=12
-                )
-                page.update()
-                print("UI actualizada con thumbnail")
-            
-        except urllib.error.URLError as e:
-            print(f"Error de URL al cargar miniatura: {e}")
-        except urllib.error.HTTPError as e:
-            print(f"Error HTTP al cargar miniatura: {e}")
-        except Exception as e:
-            print(f"Error general al cargar miniatura: {type(e).__name__}: {e}")
-    
-    def create_history_item(entry: dict):
-        format_icon = ft.Icons.MUSIC_NOTE if entry.get('format') == 'mp3' else ft.Icons.VIDEO_FILE
-        format_color = theme.accent_color if entry.get('format') == 'mp3' else theme.primary_color
-        
-        title = entry.get('title', 'Desconocido')
-        if len(title) > 35:
-            title = title[:32] + "..."
-        
-        return ft.Container(
-            content=ft.Row([
-                ft.Container(
-                    content=ft.Icon(format_icon, color=format_color, size=20),
-                    bgcolor=ft.Colors.with_opacity(0.1, format_color),
-                    padding=10,
-                    border_radius=10
-                ),
-                ft.Column([
-                    ft.Text(title, size=14, weight=ft.FontWeight.W_500, color=theme.text_primary),
-                    ft.Text(
-                        f"{entry.get('format', '').upper()} • {entry.get('date', '')}",
-                        size=12,
-                        color=theme.text_secondary
-                    )
-                ], spacing=2, expand=True),
-                ft.IconButton(
-                    icon=ft.Icons.DOWNLOAD,
-                    icon_color=theme.primary_color,
-                    icon_size=18,
-                    tooltip="Descargar de nuevo",
-                    on_click=lambda e, url=entry.get('url', ''): redownload(url)
-                )
-            ], spacing=15),
-            padding=15,
-            border_radius=12,
-            bgcolor=theme.surface_color,
-            on_hover=lambda e: update_hover(e)
-        )
-    
-    def update_hover(e):
-        e.control.bgcolor = theme.hover_color if e.data == "true" else theme.surface_color
-        e.control.update()
-    
-    def update_history():
-        history_list.controls.clear()
-        
-        if not history_manager.history:
-            history_list.controls.append(
-                ft.Container(
-                    content=ft.Text(
-                        "No hay descargas recientes",
-                        size=14,
-                        color=theme.text_disabled,
-                        text_align=ft.TextAlign.CENTER
-                    ),
-                    alignment=ft.alignment.center,
-                    padding=40
-                )
-            )
-        else:
-            for entry in history_manager.history:
-                history_list.controls.append(create_history_item(entry))
-        
-        page.update()
-    
-    def redownload(url: str):
-        url_field.value = url
-        page.update()
-        fetch_video_info(url)
-    
-    def clear_history(e):
-        def confirm(e):
-            print(f"Botón presionado: {e.control.text}")  # Debug
-            if e.control.text == "Sí":
-                print("Confirmando limpieza...")  # Debug
-                history_manager.clear()
-                update_history()
-                print("Historial limpiado y UI actualizada")  # Debug
-            page.close(dialog)
-        
-        dialog = ft.AlertDialog(
-            title=ft.Text("Confirmar"),
-            content=ft.Text("¿Estás seguro de que quieres limpiar el historial?"),
-            actions=[
-                ft.TextButton("Cancelar", on_click=confirm),
-                ft.TextButton("Sí", on_click=confirm, style=ft.ButtonStyle(color=theme.error_color))
-            ],
-            actions_alignment=ft.MainAxisAlignment.END
-        )
-        
-        print("Abriendo diálogo de confirmación...")  # Debug
-        page.open(dialog)
-        page.update()
-    
+    video_info_card = ft.Container(
+        content=ft.Column([
+            ft.Stack([video_placeholder, video_img]),
+            ft.Container(height=5),
+            video_title,
+            ft.Row([ft.Icon(ft.Icons.PERSON, size=14, color=theme.text_secondary), video_author], spacing=5)
+        ]),
+        visible=False,
+        animate_opacity=300,
+        padding=10,
+        border=ft.border.all(1, ft.Colors.with_opacity(0.1, theme.border_color)),
+        border_radius=12
+    )
+
+    # History List
+    history_list = ft.ListView(expand=True, spacing=10, padding=10)
+
+    # --- Logic ---
+
     def toggle_theme(e):
         theme.toggle()
         theme.apply_to_page(page)
-        
-        # Actualizar icono del botón
-        e.control.icon = ft.Icons.DARK_MODE if not theme.is_dark else ft.Icons.LIGHT_MODE
-        
-        # Actualizar colores de todos los componentes
-        update_theme_colors()
+        theme_btn.icon = ft.Icons.DARK_MODE if not theme.is_dark else ft.Icons.LIGHT_MODE
+        update_ui_colors()
         page.update()
-    
-    def update_theme_colors():
-        """Actualizar todos los colores de la interfaz cuando cambie el tema"""
-        # Header
-        main_container.content.controls[0].bgcolor = theme.surface_color
-        main_container.bgcolor = theme.bg_color
+
+    def update_ui_colors():
+        # Update colors manually for inputs/text where not auto-bound
+        url_field.bgcolor = theme.input_bgcolor
+        url_field.color = theme.text_primary
+        url_field.focused_border_color = theme.primary_color
         
-        # Progress bar
-        progress_bar.color = theme.primary_color
-        progress_bar.bgcolor = theme.border_color
+        folder_field.bgcolor = theme.input_bgcolor
+        folder_field.color = theme.text_secondary
         
-        # Textos del header
-        main_container.content.controls[0].content.controls[0].controls[1].color = theme.text_primary
+        title_text.color = theme.text_primary
+        theme_btn.icon_color = theme.text_primary
         
-        # Botón de cambio de tema
-        main_container.content.controls[0].content.controls[1].icon_color = theme.text_primary
+        select_format(selected_format) # Refresh chips
         
-        # Divider
-        main_container.content.controls[1].color = theme.border_color
+        status_chip.set_status(status_chip._status) # Refresh chip colors
         
-        # Paneles principales
-        main_container.content.controls[2].controls[0].bgcolor = theme.bg_color  # Panel izquierdo
-        main_container.content.controls[2].controls[2].bgcolor = theme.bg_color  # Panel derecho
-        
-        # Divider vertical
-        main_container.content.controls[2].controls[1].color = theme.border_color
-        
-        # Actualizar textos de las secciones del panel izquierdo
-        left_panel = main_container.content.controls[2].controls[0].content.controls
-        
-        # "URL del Video" - índice 0
-        if len(left_panel) > 0 and hasattr(left_panel[0], 'controls'):
-            if len(left_panel[0].controls) > 0 and hasattr(left_panel[0].controls[0], 'color'):
-                left_panel[0].controls[0].color = theme.text_primary
-        
-        # "Formato de descarga" - índice 2 (después del Container de altura 30)
-        if len(left_panel) > 2 and hasattr(left_panel[2], 'controls'):
-            if len(left_panel[2].controls) > 0 and hasattr(left_panel[2].controls[0], 'color'):
-                left_panel[2].controls[0].color = theme.text_primary
-        
-        # "Ubicación de descarga" - índice 4
-        if len(left_panel) > 4 and hasattr(left_panel[4], 'controls'):
-            if len(left_panel[4].controls) > 0 and hasattr(left_panel[4].controls[0], 'color'):
-                left_panel[4].controls[0].color = theme.text_primary
-        
-        # "Progreso de descarga" - índice 6
-        if len(left_panel) > 6 and hasattr(left_panel[6], 'controls'):
-            if len(left_panel[6].controls) > 0 and hasattr(left_panel[6].controls[0], 'color'):
-                left_panel[6].controls[0].color = theme.text_primary
-        
-        # Actualizar textos de progreso solo si están visibles
-        if progress_text.visible:
-            progress_text.color = theme.text_primary
-            progress_percent.color = theme.text_primary
-        
-        # Card de información del video
-        video_card = main_container.content.controls[2].controls[2].content.controls[0]
-        video_card.content.bgcolor = theme.card_color
-        video_card.color = theme.card_color
-        
-        # Texto "Información del Video"
-        video_card.content.content.controls[0].controls[1].color = theme.text_primary
-        
-        # Divider de la card
-        video_card.content.content.controls[1].color = theme.border_color
-        
-        # Texto "Historial de descargas"
-        history_header = main_container.content.controls[2].controls[2].content.controls[2]
-        history_header.controls[0].controls[1].color = theme.text_primary
-        
-        # Contenedor del historial
-        history_container = main_container.content.controls[2].controls[2].content.controls[4]
-        history_container.border = ft.border.all(1, theme.border_color)
-        history_container.bgcolor = theme.surface_color
-        
-        # Actualizar items del historial
-        update_history()
-        
-        # Actualizar información del video si existe
-        update_video_info_colors()
-    
-    def update_video_info_colors():
-        """Actualizar colores del panel de información del video"""
-        if len(video_info_content.controls) > 1:
-            # Si hay información del video cargada
-            for i, control in enumerate(video_info_content.controls):
-                if hasattr(control, 'color'):
-                    if i == 2:  # Título del video
-                        control.color = theme.text_primary
-                    elif i == 4:  # Row con información adicional
-                        for row in control.controls:
-                            if hasattr(row, 'controls'):
-                                for item in row.controls:
-                                    if hasattr(item, 'color'):
-                                        item.color = theme.text_secondary
-                elif hasattr(control, 'bgcolor'):
-                    if i == 0:  # Contenedor de imagen/icono
-                        control.bgcolor = theme.surface_color
+        # Refresh history
+        update_history_list()
+
+    def select_format(value):
+        nonlocal selected_format
+        selected_format = value
+        for chip in format_chips:
+            is_me = chip.data == value
+            # Styling
+            chip.bgcolor = ft.Colors.with_opacity(0.15, theme.primary_color) if is_me else theme.input_bgcolor
+            chip.border = ft.border.all(1, theme.primary_color if is_me else ft.Colors.TRANSPARENT)
+            
+            row = chip.content
+            row.controls[0].color = theme.primary_color if is_me else theme.text_secondary
+            row.controls[1].color = theme.text_primary if is_me else theme.text_secondary
+            row.controls[1].weight = ft.FontWeight.W_600 if is_me else ft.FontWeight.NORMAL
+        page.update()
+
+    def on_url_change(e):
+        url = e.control.value.strip()
+        if downloader.validate_url(url):
+            status_chip.set_status("working", "Analizando...")
+            video_info_card.visible = True
+            video_info_card.opacity = 0.5 # Dim while loading
+            page.update()
+            
+            def load():
+                downloader.get_video_info(url, show_video_info)
+            threading.Timer(0.5, load).start()
         else:
-            # Si no hay información, mostrar el estado inicial
-            video_info_content.controls = [
-                ft.Container(
-                    content=ft.Icon(ft.Icons.VIDEO_LIBRARY, color=theme.text_disabled, size=48),
-                    alignment=ft.alignment.center,
-                    padding=40
-                ),
-                ft.Text(
-                    "Pega una URL para ver la información del video",
-                    size=14,
-                    color=theme.text_secondary,
-                    text_align=ft.TextAlign.CENTER
-                )
-            ]
-    
-    def clear_url(e):
-        url_field.value = ""
-        video_info_content.controls = [
-            ft.Container(
-                content=ft.Icon(ft.Icons.VIDEO_LIBRARY, color=theme.text_disabled, size=48),
-                alignment=ft.alignment.center,
-                padding=40
-            ),
-            ft.Text(
-                "Pega una URL para ver la información del video",
-                size=14,
-                color=theme.text_secondary,
-                text_align=ft.TextAlign.CENTER
-            )
-        ]
+            status_chip.set_status("ready")
+            video_info_card.visible = False
+            page.update()
+
+    def show_video_info(info):
+        if not info:
+             status_chip.set_status("error", "URL inválida")
+             return
+             
+        video_title.value = info.get('title', 'Desconocido')
+        video_author.value = info.get('uploader', 'Desconocido')
+        
+        status_chip.set_status("ready")
+        video_info_card.opacity = 1.0
+        
+        thumb_url = info.get('thumbnail')
+        if thumb_url:
+            def load_img():
+                try:
+                    with urllib.request.urlopen(thumb_url) as res:
+                        import base64
+                        b64 = base64.b64encode(res.read()).decode()
+                        video_img.src_base64 = b64
+                        video_img.visible = True
+                        video_placeholder.visible = False
+                        page.update()
+                except: pass
+            threading.Thread(target=load_img, daemon=True).start()
+        
         page.update()
-    
-    # Asignar eventos
-    url_field.on_change = on_url_change
-    
-    # Layout principal
-    main_container = ft.Container(
-        content=ft.Column([
-            # Header
-            ft.Container(
-                content=ft.Row([
-                    ft.Row([
-                        ft.Icon(ft.Icons.PLAY_CIRCLE_FILLED, color=theme.primary_color, size=32),
-                        ft.Text("YouTube Downloader", size=24, weight=ft.FontWeight.BOLD, color=theme.text_primary)
-                    ], spacing=15),
-                    ft.IconButton(
-                        icon=ft.Icons.DARK_MODE if not theme.is_dark else ft.Icons.LIGHT_MODE,
-                        icon_color=theme.text_primary,
-                        tooltip="Cambiar tema",
-                        on_click=toggle_theme
-                    )
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                padding=ft.padding.symmetric(horizontal=30, vertical=20),
-                bgcolor=theme.surface_color
-            ),
+
+    def start_download():
+        url = url_field.value.strip()
+        if not url: return
+        
+        download_btn.set_disabled(True)
+        status_chip.set_status("working", "Iniciando...")
+        progress_container.visible = True
+        progress_bar.color = theme.primary_color
+        page.update()
+        
+        def on_progress(percent, text):
+            progress_bar.value = percent / 100
+            progress_percent.value = f"{int(percent)}%"
+            progress_info_text.value = text
+            status_chip.set_status("working", "Descargando...")
+            page.update()
             
-            ft.Divider(height=1, color=theme.border_color),
+        def on_complete(info):
+            download_btn.set_disabled(False)
+            status_chip.set_status("done", "¡Listo!")
+            progress_bar.color = theme.success_color
+            history_manager.add(info)
+            update_history_list()
             
-            # Contenido principal
-            ft.Row([
-                # Panel izquierdo
-                ft.Container(
-                    content=ft.Column([
-                        # URL Input
-                        ft.Column([
-                            ft.Text("URL del Video", size=16, weight=ft.FontWeight.W_500, color=theme.text_primary),
-                            ft.Row([url_field, ft.IconButton(ft.Icons.CLEAR, on_click=clear_url)], spacing=10)
-                        ], spacing=10),
-                        
-                        ft.Container(height=30),
-                        
-                        # Formato
-                        ft.Column([
-                            ft.Text("Formato de descarga", size=16, weight=ft.FontWeight.W_500, color=theme.text_primary),
-                            format_row
-                        ], spacing=10),
-                        
-                        ft.Container(height=30),
-                        
-                        # Ubicación
-                        ft.Column([
-                            ft.Text("Ubicación de descarga", size=16, weight=ft.FontWeight.W_500, color=theme.text_primary),
-                            ft.Row([folder_field, browse_button], spacing=10)
-                        ], spacing=10),
-                        
-                        ft.Container(height=30),
-                        
-                        # Progreso (solo visible durante descarga)
-                        progress_container,
-                        
-                        ft.Container(height=40),
-                        
-                        # Botón de descarga (siempre visible)
-                        ft.Row([download_button], alignment=ft.MainAxisAlignment.CENTER)
-                    ], scroll=ft.ScrollMode.AUTO),
-                    padding=40,
-                    expand=3,
-                    bgcolor=theme.bg_color
-                ),
-                
-                ft.VerticalDivider(width=1, color=theme.border_color),
-                
-                # Panel derecho
-                ft.Container(
-                    content=ft.Column([
-                        # Card de información del video
-                        ft.Card(
-                            content=ft.Container(
-                                content=ft.Column([
-                                    ft.Row([
-                                        ft.Icon(ft.Icons.INFO, color=theme.primary_color, size=24),
-                                        ft.Text("Información del Video", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary)
-                                    ], spacing=10),
-                                    ft.Divider(color=theme.border_color),
-                                    video_info_content
-                                ], spacing=10),
-                                padding=20,
-                                bgcolor=theme.card_color
-                            ),
-                            elevation=2,
-                            color=theme.card_color
-                        ),
-                        
-                        ft.Container(height=20),
-                        
-                        # Encabezado del historial
-                        ft.Row([
-                            ft.Row([
-                                ft.Icon(ft.Icons.HISTORY, color=theme.primary_color, size=24),
-                                ft.Text("Historial de descargas", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary)
-                            ], spacing=10),
-                            ft.TextButton(
-                                "Limpiar",
-                                icon=ft.Icons.DELETE_OUTLINE,
-                                icon_color=theme.error_color,
-                                style=ft.ButtonStyle(color=theme.error_color),
-                                on_click=clear_history
-                            )
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        
-                        ft.Container(height=10),
-                        
-                        # Lista de historial
-                        ft.Container(
-                            content=history_list,
-                            border=ft.border.all(1, theme.border_color),
-                            border_radius=12,
-                            padding=10,
-                            bgcolor=theme.surface_color,
-                            height=300,
-                            expand=True
-                        )
-                    ]),
-                    padding=40,
-                    expand=2,
-                    bgcolor=theme.bg_color
+            time.sleep(3)
+            progress_container.visible = False
+            status_chip.set_status("ready")
+            progress_bar.color = theme.primary_color
+            page.update()
+            
+        def on_error(err):
+            download_btn.set_disabled(False)
+            status_chip.set_status("error", "Error")
+            progress_bar.color = theme.error_color
+            progress_info_text.value = str(err)
+            page.update()
+            
+        downloader.callback_progress = on_progress
+        downloader.callback_complete = on_complete
+        downloader.callback_error = on_error
+        
+        downloader.download(url, download_path, selected_format)
+
+    def update_history_list():
+        history_list.controls.clear()
+        for item in history_manager.history:
+            history_list.controls.append(create_history_item(item))
+        page.update()
+
+    def create_history_item(item):
+        return ft.Container(
+            content=ft.Row([
+                ft.Icon(ft.Icons.CHECK_CIRCLE, color=theme.success_color, size=16),
+                ft.Column([
+                    ft.Text(item['title'], color=theme.text_primary, weight=ft.FontWeight.W_600, size=13, no_wrap=True),
+                    ft.Text(f"{item['format'].upper()} • {item['date']}", color=theme.text_secondary, size=11)
+                ], expand=True, spacing=2),
+                ft.IconButton(ft.Icons.FOLDER_OPEN, icon_color=theme.text_secondary, icon_size=18, 
+                    tooltip="Abrir carpeta", 
+                    on_click=lambda e: os.startfile(os.path.dirname(item['path'])) if os.path.exists(item['path']) else None
                 )
-            ], expand=True)
-        ], spacing=0),
-        bgcolor=theme.bg_color,
-        expand=True
+            ], spacing=10),
+            padding=10,
+            bgcolor=theme.surface_color,
+            border_radius=8,
+            border=ft.border.all(1, ft.Colors.with_opacity(0.1, theme.border_color))
+        )
+
+    def select_folder(e):
+        fp = ft.FilePicker(on_result=lambda res: on_folder_result(res))
+        page.overlay.append(fp)
+        page.update()
+        fp.get_directory_path("Seleccionar carpeta")
+        
+    def on_folder_result(e):
+        if e.path:
+            nonlocal download_path
+            download_path = e.path
+            folder_field.value = e.path
+            page.update()
+
+    # --- Layout (Responsive) ---
+    
+    # Left Panel (Download)
+    download_panel = ft.Container(
+        content=ft.Column([
+            ft.Text("Descargar Video", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary),
+            ft.Container(height=10),
+            url_field,
+            ft.Container(height=10),
+            ft.Text("Formato", color=theme.text_secondary, size=13, weight=ft.FontWeight.BOLD),
+            format_row,
+            ft.Container(height=10),
+            ft.Text("Guardar en", color=theme.text_secondary, size=13, weight=ft.FontWeight.BOLD),
+            ft.Row([folder_field, folder_btn]),
+            ft.Container(height=20),
+            progress_container,
+            ft.Container(height=10),
+            ft.Column([download_btn], horizontal_alignment=ft.CrossAxisAlignment.STRETCH), # Full width button
+            ft.Container(height=20),
+            video_info_card
+        ], scroll=ft.ScrollMode.HIDDEN),
+        padding=30,
+        bgcolor=theme.surface_color,
+        border_radius=20,
+        shadow=ft.BoxShadow(blur_radius=10, color=theme.shadow_color)
     )
     
-    # Cargar historial inicial
-    update_history()
-    
-    return main_container
+    # Right Panel (History)
+    history_panel = ft.Container(
+        content=ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.HISTORY, color=theme.text_primary),
+                ft.Text("Historial", size=18, weight=ft.FontWeight.BOLD, color=theme.text_primary)
+            ], spacing=10),
+            ft.Divider(color=theme.border_color),
+            history_list
+        ]),
+        padding=20,
+        bgcolor=theme.bg_color, # Clean background
+        border_radius=20
+    )
+
+    # Main Grid Layout
+    layout = ft.ResponsiveRow([
+        # Header (Full width)
+        ft.Column(col=12, controls=[
+            ft.Container(
+                content=ft.Row([
+                    ft.Row([ft.Icon(ft.Icons.PLAY_CIRCLE_FILLED, color=theme.primary_color, size=30), title_text], spacing=10),
+                    ft.Row([status_chip, theme_btn], spacing=10)
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                padding=ft.padding.symmetric(horizontal=20, vertical=15),
+            )
+        ]),
+        
+        # Content
+        ft.Column(col={"sm": 12, "md": 7, "lg": 8}, controls=[download_panel]),
+        ft.Column(col={"sm": 12, "md": 5, "lg": 4}, controls=[history_panel]),
+    ])
+
+    # Initial Init
+    # update_ui_colors() # Removed to prevent crash on startup (controls not yet on page)
+    return ft.Container(
+        content=layout,
+        expand=True,
+        gradient=ft.LinearGradient(
+            begin=ft.alignment.top_left,
+            end=ft.alignment.bottom_right,
+            colors=[theme.bg_color, theme.bg_color]
+        ),
+        padding=10
+    )
