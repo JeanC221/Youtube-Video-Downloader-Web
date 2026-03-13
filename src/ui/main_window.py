@@ -125,7 +125,6 @@ def MainWindow(page: ft.Page) -> ft.Container:
     #  HEADER                                                             #
     # ================================================================== #
 
-    title_icon = ft.Image(src="logo.png", width=28, height=28, fit=ft.ImageFit.CONTAIN)
     title_text = ft.Text(
         "YouTube Downloader",
         size=22,
@@ -147,7 +146,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
     header = ft.Container(
         content=ft.Row(
             [
-                ft.Row([title_icon, title_text], spacing=10),
+                ft.Row([title_text], spacing=10),
                 ft.Row([status_chip, help_btn], spacing=4),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -912,23 +911,26 @@ def MainWindow(page: ft.Page) -> ft.Container:
         [
             header,
             ft.Container(
-                content=ft.ResponsiveRow(
+                content=ft.Row(
                     [
-                        ft.Column(
-                            col={"xs": 12, "md": 7, "lg": 8},
-                            controls=[download_panel],
+                        ft.Container(
+                            content=download_panel,
+                            expand=2,
                         ),
-                        ft.Column(
-                            col={"xs": 12, "md": 5, "lg": 4},
-                            controls=[
-                                video_info_card,
-                                ft.Container(height=12),
-                                history_panel,
-                            ],
+                        ft.Container(
+                            content=ft.Column(
+                                [
+                                    video_info_card,
+                                    ft.Container(height=12),
+                                    history_panel,
+                                ],
+                                spacing=0,
+                            ),
+                            expand=1,
                         ),
                     ],
                     spacing=16,
-                    run_spacing=16,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
                 ),
                 padding=ft.padding.symmetric(horizontal=16),
                 expand=True,
