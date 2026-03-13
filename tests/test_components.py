@@ -55,7 +55,7 @@ class TestModernButton:
     def test_disabled_state(self) -> None:
         btn = ModernButton(text="Click", disabled=True)
         assert btn.is_disabled is True
-        assert btn.opacity == 0.6
+        assert btn.opacity == 0.5
         assert btn.on_click is None
 
     def test_set_disabled(self) -> None:
@@ -64,7 +64,7 @@ class TestModernButton:
 
         btn.set_disabled(True)
         assert btn.is_disabled is True
-        assert btn.opacity == 0.6
+        assert btn.opacity == 0.5
 
         btn.set_disabled(False)
         assert btn.is_disabled is False

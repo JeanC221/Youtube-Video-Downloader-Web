@@ -27,17 +27,16 @@ class Application:
         page.title = "YouTube Video Downloader"
         page.window.width = 1100
         page.window.height = 750
-        page.window.min_width = 900
-        page.window.min_height = 650
+        page.window.min_width = 800
+        page.window.min_height = 600
 
         try:
             page.window.center()
         except AttributeError:
             pass
 
-        page.theme_mode = ft.ThemeMode.LIGHT
-        page.bgcolor = "#ffffff"
         page.padding = 0
+        page.spacing = 0
 
         try:
             main_window = MainWindow(page)
@@ -49,7 +48,7 @@ class Application:
                     content=ft.Column(
                         [
                             ft.Icon(ft.Icons.ERROR, size=48, color="red"),
-                            ft.Text("Error al cargar la aplicación:", size=20),
+                            ft.Text("Error al cargar la aplicacion:", size=20),
                             ft.Text(str(exc), size=14),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,

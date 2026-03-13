@@ -24,12 +24,12 @@ class StatusChip(ft.Container):
 
     _TEXT_MAP = {
         "ready": "Listo",
-        "working": "Procesando…",
+        "working": "Procesando...",
         "done": "Completado",
         "error": "Error",
     }
 
-    def __init__(self, theme: object) -> None:  # noqa: ANN001
+    def __init__(self, theme: object) -> None:
         super().__init__()
         self.theme = theme
         self._status = "ready"
@@ -110,11 +110,10 @@ class ModernButton(ft.Container):
         self.icon_name = icon
         self.width = width
         self.height = height
-        self.gradient_colors = gradient_colors or ["#ec4899", "#a855f7"]
+        self.gradient_colors = gradient_colors or ["#6366F1", "#8B5CF6"]
         self.is_disabled = disabled
         self.tooltip = tooltip
 
-        # Build content row
         content_items: list[ft.Control] = []
         if self.icon_name:
             content_items.append(ft.Icon(self.icon_name, color="white", size=20))
@@ -122,7 +121,7 @@ class ModernButton(ft.Container):
                 content_items.append(ft.Container(width=8))
         if text:
             content_items.append(
-                ft.Text(text, size=16, weight=ft.FontWeight.BOLD, color="white")
+                ft.Text(text, size=15, weight=ft.FontWeight.W_600, color="white")
             )
 
         self.content = ft.Row(
@@ -134,22 +133,22 @@ class ModernButton(ft.Container):
             begin=ft.alignment.center_left,
             end=ft.alignment.center_right,
         )
-        self.border_radius = self.height // 2
+        self.border_radius = 12
         self.on_click = self._handle_click if not disabled else None
         self.on_hover = self._on_hover
         self.animate_scale = ft.Animation(100, "easeOut")
         self.scale = 1.0
-        self.opacity = 0.6 if disabled else 1.0
+        self.opacity = 0.5 if disabled else 1.0
         self.shadow = ft.BoxShadow(
-            blur_radius=10,
-            color=ft.Colors.with_opacity(0.3, self.gradient_colors[0]),
+            blur_radius=12,
+            color=ft.Colors.with_opacity(0.25, self.gradient_colors[0]),
             offset=ft.Offset(0, 4),
         )
         self.ink = True
 
     def _handle_click(self, e: ft.ControlEvent) -> None:
         if self.base_on_click:
-            self.scale = 0.95
+            self.scale = 0.97
             self.update()
 
             def _reset() -> None:
@@ -168,7 +167,7 @@ class ModernButton(ft.Container):
     def set_disabled(self, disabled: bool) -> None:
         """Enable or disable the button."""
         self.is_disabled = disabled
-        self.opacity = 0.6 if disabled else 1.0
+        self.opacity = 0.5 if disabled else 1.0
         self.on_click = None if disabled else self._handle_click
         self.update()
 
@@ -181,7 +180,7 @@ class TooltipIconButton(ft.IconButton):
         icon: str,
         on_click: Callable[..., None],
         tooltip: str,
-        theme: object,  # noqa: ANN001
+        theme: object,
         icon_color: Optional[str] = None,
     ) -> None:
         super().__init__()
