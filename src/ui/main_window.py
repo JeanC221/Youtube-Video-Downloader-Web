@@ -134,17 +134,6 @@ def MainWindow(page: ft.Page) -> ft.Container:
         color=theme.text_primary,
     )
 
-    theme_btn = ft.IconButton(
-        icon=ft.Icons.LIGHT_MODE if theme.is_dark else ft.Icons.DARK_MODE,
-        icon_color=theme.text_secondary,
-        tooltip="Cambiar tema",
-        icon_size=22,
-        on_click=lambda e: toggle_theme(e),
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=10),
-        ),
-    )
-
     help_btn = ft.IconButton(
         icon=ft.Icons.HELP_OUTLINE,
         icon_color=theme.text_secondary,
@@ -160,7 +149,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         content=ft.Row(
             [
                 ft.Row([title_icon, title_text], spacing=10),
-                ft.Row([status_chip, help_btn, theme_btn], spacing=4),
+                ft.Row([status_chip, help_btn], spacing=4),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         ),
@@ -232,37 +221,36 @@ def MainWindow(page: ft.Page) -> ft.Container:
         chip = ft.Container(
             content=ft.Row(
                 [
-                    ft.Icon(fmt["icon"], size=16, color=icon_clr),
-                    ft.Column(
-                        [
-                            ft.Text(fmt["label"], color=text_clr, weight=weight, size=13),
-                            ft.Text(fmt["desc"], color=theme.text_secondary, size=10),
-                        ],
-                        spacing=0,
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    ),
+                    ft.Icon(fmt["icon"], size=14, color=icon_clr),
+                    ft.Text(fmt["label"], color=text_clr, weight=weight, size=12),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
-                spacing=6,
+                spacing=4,
             ),
-            padding=ft.padding.symmetric(horizontal=14, vertical=8),
-            border_radius=10,
+            padding=ft.padding.symmetric(horizontal=10, vertical=7),
+            border_radius=8,
             bgcolor=bg,
             border=ft.border.all(1, border_clr),
             on_click=lambda _e, v=value: select_format(v),
             animate=ft.Animation(200, "easeOut"),
             data=value,
-            tooltip=f"Formato {fmt['label']} ({fmt['desc']})",
+            expand=True,
+            tooltip=f"{fmt['label']} \u2013 {fmt['desc']}",
         )
         format_chips.append(chip)
         return chip
 
-    format_row = ft.Row(
-        [_create_format_chip(f) for f in _FORMAT_UI],
-        spacing=8,
-        wrap=True,
-        run_spacing=8,
-    )
+    # Build compact grid: 3 per row
+    _fmt_grid_rows: list[ft.Row] = []
+    for _i in range(0, len(_FORMAT_UI), 3):
+        _row_fmts = _FORMAT_UI[_i : _i + 3]
+        _row_chips = [_create_format_chip(f) for f in _row_fmts]
+        # pad incomplete rows so chips don't stretch full width
+        while len(_row_chips) < 3:
+            _row_chips.append(ft.Container(expand=True))
+        _fmt_grid_rows.append(ft.Row(_row_chips, spacing=8))
+
+    format_grid = ft.Column(_fmt_grid_rows, spacing=6)
 
     format_section_label = ft.Text(
         "Formato de descarga",
@@ -505,18 +493,21 @@ def MainWindow(page: ft.Page) -> ft.Container:
     download_panel = ft.Container(
         content=ft.Column(
             [
-                ft.Text(
-                    "Descargar video",
-                    size=18,
-                    weight=ft.FontWeight.BOLD,
-                    color=theme.text_primary,
+                ft.Container(
+                    content=ft.Text(
+                        "Descargar video",
+                        size=18,
+                        weight=ft.FontWeight.BOLD,
+                        color=theme.text_primary,
+                    ),
+                    padding=ft.padding.symmetric(horizontal=24),
                 ),
                 ft.Container(height=12),
                 url_section,
                 ft.Container(height=16),
                 ft.Container(
                     content=ft.Column(
-                        [format_section_label, ft.Container(height=8), format_row],
+                        [format_section_label, ft.Container(height=6), format_grid],
                         spacing=0,
                     ),
                     padding=ft.padding.symmetric(horizontal=24),
@@ -568,80 +559,6 @@ def MainWindow(page: ft.Page) -> ft.Container:
     #  EVENT HANDLERS                                                     #
     # ================================================================== #
 
-    def toggle_theme(_e: ft.ControlEvent) -> None:
-        theme.toggle()
-        theme.apply_to_page(page)
-        theme_btn.icon = ft.Icons.LIGHT_MODE if theme.is_dark else ft.Icons.DARK_MODE
-        _refresh_ui_colors()
-        page.update()
-
-    def _refresh_ui_colors() -> None:
-        """Re-apply theme colours to all controls after toggle."""
-        # Header
-        title_icon.color = theme.primary_color
-        title_text.color = theme.text_primary
-        theme_btn.icon_color = theme.text_secondary
-        help_btn.icon_color = theme.text_secondary
-
-        # URL field
-        url_field.bgcolor = theme.input_bgcolor
-        url_field.color = theme.text_primary
-        url_field.border_color = theme.input_border
-        url_field.focused_border_color = theme.border_focus
-        url_field.label_style = ft.TextStyle(color=theme.text_secondary)
-        url_field.hint_style = ft.TextStyle(color=theme.text_disabled)
-        paste_btn.icon_color = theme.text_secondary
-
-        # Format chips
-        select_format(selected_format[0])
-        format_section_label.color = theme.text_secondary
-
-        # Folder
-        folder_field.bgcolor = theme.input_bgcolor
-        folder_field.color = theme.text_secondary
-        folder_field.border_color = theme.input_border
-        folder_field.label_style = ft.TextStyle(color=theme.text_secondary)
-        folder_btn.icon_color = theme.text_secondary
-
-        # Progress
-        progress_bar.color = theme.primary_color
-        progress_bar.bgcolor = ft.Colors.with_opacity(0.15, theme.primary_color)
-        progress_info_text.color = theme.text_secondary
-        progress_percent.color = theme.primary_color
-
-        # Download panel
-        download_panel.bgcolor = theme.surface_color
-        download_panel.border = ft.border.all(1, theme.border_color)
-        download_panel.shadow = ft.BoxShadow(
-            blur_radius=12, color=theme.shadow_color, offset=ft.Offset(0, 2)
-        )
-
-        # Video info card
-        video_info_card.bgcolor = theme.surface_color
-        video_info_card.border = ft.border.all(1, theme.border_color)
-        video_info_card.shadow = ft.BoxShadow(blur_radius=8, color=theme.shadow_color)
-        video_title.color = theme.text_primary
-        video_author.color = theme.text_secondary
-        video_duration_text.color = theme.text_secondary
-        video_placeholder.bgcolor = theme.input_bgcolor
-
-        # History panel
-        history_panel.bgcolor = theme.surface_color
-        history_panel.border = ft.border.all(1, theme.border_color)
-        header_history.color = theme.text_primary
-        clear_history_btn.style = ft.ButtonStyle(color=theme.text_secondary)
-
-        # Status chip
-        status_chip._color_map = status_chip._build_color_map()
-        status_chip.set_status(status_chip._status)
-
-        # Footer
-        for ctrl in footer.content.controls:
-            ctrl.color = theme.text_disabled
-
-        # Rebuild history items with new colours
-        update_history_list()
-
     def select_format(value: str) -> None:
         selected_format[0] = value
         for chip in format_chips:
@@ -652,9 +569,8 @@ def MainWindow(page: ft.Page) -> ft.Container:
             chip.border = ft.border.all(1, theme.primary_color if is_me else theme.border_color)
             row = chip.content
             row.controls[0].color = theme.primary_color if is_me else theme.text_secondary
-            col = row.controls[1]
-            col.controls[0].color = theme.text_primary if is_me else theme.text_secondary
-            col.controls[0].weight = ft.FontWeight.W_600 if is_me else ft.FontWeight.NORMAL
+            row.controls[1].color = theme.text_primary if is_me else theme.text_secondary
+            row.controls[1].weight = ft.FontWeight.W_600 if is_me else ft.FontWeight.NORMAL
         page.update()
 
     _url_timer: list[Optional[threading.Timer]] = [None]
