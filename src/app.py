@@ -1,60 +1,71 @@
+"""Flet application entry point.
+
+Configures the page (window size, theme, etc.) and adds the main UI.
+"""
+
+from __future__ import annotations
+
+import logging
+
 import flet as ft
+
 from src.ui.main_window import MainWindow
 
+logger = logging.getLogger(__name__)
+
+
 class Application:
-    def __init__(self):
-        self.page = None
-    
-    def main(self, page: ft.Page):
-        """Configurar y ejecutar la aplicación"""
+    """Top-level application that configures the Flet page and runs the event loop."""
+
+    def __init__(self) -> None:
+        self.page: ft.Page | None = None
+
+    def main(self, page: ft.Page) -> None:
+        """Configure and populate *page* with the main window."""
         self.page = page
-        
-        # Configuración de la ventana
+
         page.title = "YouTube Video Downloader"
-        
-        # Configurar tamaño de ventana (sin window_center)
-        page.window_width = 1100
-        page.window_height = 750
-        page.window_min_width = 900
-        page.window_min_height = 650
-        
-        # Centrar ventana manualmente si es posible
+        page.window.width = 1100
+        page.window.height = 750
+        page.window.min_width = 900
+        page.window.min_height = 650
+
         try:
-            page.window_center()
+            page.window.center()
         except AttributeError:
-            # Si window_center no existe, continuar sin centrar
             pass
-        
-        # Tema
+
         page.theme_mode = ft.ThemeMode.LIGHT
         page.bgcolor = "#ffffff"
         page.padding = 0
-        
+
         try:
-            # Crear y agregar ventana principal
             main_window = MainWindow(page)
             page.add(main_window)
-        except Exception as e:
-            # Mostrar error si algo falla
+        except Exception as exc:
+            logger.exception("Failed to load main window")
             page.add(
                 ft.Container(
-                    content=ft.Column([
-                        ft.Icon(ft.Icons.ERROR, size=48, color="red"),
-                        ft.Text(f"Error al cargar la aplicación:", size=20),
-                        ft.Text(str(e), size=14),
-                    ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    content=ft.Column(
+                        [
+                            ft.Icon(ft.Icons.ERROR, size=48, color="red"),
+                            ft.Text("Error al cargar la aplicación:", size=20),
+                            ft.Text(str(exc), size=14),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    ),
                     alignment=ft.alignment.center,
-                    expand=True
+                    expand=True,
                 )
             )
-        
+
         page.update()
-    
-    def run(self):
-        """Ejecutar la aplicación"""
+
+    def run(self) -> None:
+        """Launch the Flet desktop application."""
         try:
             ft.app(target=self.main, assets_dir="assets")
-        except Exception as e:
-            print(f"Error al ejecutar la aplicación: {e}")
-            # Intentar sin assets_dir
+        except Exception:
+            logger.warning("Retrying without assets_dir")
             ft.app(target=self.main)

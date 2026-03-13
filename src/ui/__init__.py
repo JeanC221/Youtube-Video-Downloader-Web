@@ -1,1 +1,1 @@
-# UI Package
+"""UI package for the YouTube Video Downloader."""

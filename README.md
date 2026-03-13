@@ -1,69 +1,97 @@
-# YouTube Video Downloader 🎥
+  # YouTube Video Downloader
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-86%20passed-brightgreen)]()
 
-Modern desktop application to download YouTube videos in MP4, MP3, or original format with customizable themes and persistent history.
+Modern desktop application to download YouTube videos in multiple formats with a premium UI, persistent history, and robust error handling.
 
+## Features
 
-## 🌟 Features
-- **One-Click Downloads** - MP4, MP3, or original format
-- **Smart Preview** - Thumbnails & video details before downloading
-- **Dark/Light Themes** - Customizable interface colors
-- **Portable Version** - No installation required
-- **Download History** - Track your last 20 downloads
+- **Multiple Formats** — MP4, MP3, M4A, WAV, WebM, MKV, or original quality
+- **Best Quality Selection** — Automatically merges best video + best audio via ffmpeg
+- **Smart Preview** — Thumbnails and video details before downloading
+- **Dark / Light Themes** — Premium gradient UI with one-click toggle
+- **Download History** — Persistent history with search, deduplication, and atomic saves
+- **Retry Logic** — Automatic retries with exponential backoff on network failures
+- **Disk Space Check** — Validates available space before downloading
+- **Windows-Safe Filenames** — Sanitizes forbidden characters automatically
+- **Progress Tracking** — Real-time speed, ETA, and percentage display
+- **Metadata Caching** — Avoids re-fetching info for the same URL
 
-## 🚀 Quick Start for Everyone -- Soon
+## Quick Start
 
-### For Non-Technical Users
-1. ## 📥 Download  
-Download the latest installer here:  
-[![GitHub Release](https://img.shields.io/badge/Download-Installer-brightgreen)](https://github.com/JeanC221/Youtube-Video-Downloader/releases/latest) 
+### Requirements
 
-2. **Run Setup**  
-   ```text
-   Double-click → Run anyways → Next → Install → Finish
-   Start Downloading!
-   Desktop shortcut created automatically
+- Python 3.10+
+- ffmpeg (bundled via `imageio-ffmpeg`)
 
-## For Power Users & Developers
-1. Clone repository:
-    ```bash
-    git clone https://github.com/JeanC221/Youtube-Video-Downloader.git
-   ```
-    
-3. Create virtual environment (optional):
-   ```bash
-    python -m venv venv && source venv/bin/activate  # Linux/Mac
-   ```
-   ```bash
-    venv\Scripts\activate   # Windows
-   ```
+### Installation
 
-4. Install requirements
-   ```bash
-    pip install -r requirements.txt
-   ```
-5. Run application
-   ```bash
-    python main.py
-   ```
-   
-## 🔨 Build Your Own Executable
-In your proyect root:
-   ```bash
-     pyinstaller --onefile --windowed --icon=assets/icon.ico --add-data "assets/*;assets" --name "YouTube Downloader" main.py
-   ```
+```bash
+git clone https://github.com/JeanC221/Youtube-Video-Downloader.git
+cd Youtube-Video-Downloader
+python -m venv venv
 
-## 📝 License
+# Windows
+venv\Scripts\activate
 
-Copyright © 2025 [Jean Herran](https://github.com/JeanC221).<br />
-This project is [MIT](https://github.com/kefranabg/readme-md-generator/blob/master/LICENSE) licensed.
+# Linux / macOS
+source venv/bin/activate
 
----
+pip install -r requirements.txt
+```
 
-## 💬 Support
+### Run
+
+```bash
+python main.py
+```
+
+### Run Tests
+
+```bash
+python -m pytest tests/ -v
+python -m pytest tests/ --cov=src --cov-report=term-missing
+```
+
+## Project Structure
+
+```
+Youtube-Video-Downloader/
+├── main.py                  # Entry point with logging configuration
+├── requirements.txt         # Python dependencies
+├── conftest.py              # Shared pytest fixtures
+├── src/
+│   ├── app.py               # Flet Application class
+│   ├── ui/
+│   │   ├── components.py    # StatusChip, ModernButton, TooltipIconButton
+│   │   ├── main_window.py   # Main window layout and event handlers
+│   │   └── theme.py         # Dark/Light theme colour definitions
+│   └── utils/
+│       ├── downloader.py    # YouTubeDownloader with retry, formats, progress
+│       └── history.py       # DownloadHistory with atomic writes and backups
+├── tests/
+│   ├── test_app.py          # Application class tests
+│   ├── test_components.py   # UI component tests
+│   ├── test_downloader.py   # Downloader, sanitization, disk space tests
+│   ├── test_history.py      # History persistence, backup, search tests
+│   └── test_theme.py        # Theme toggle and colour attribute tests
+└── installer.iss            # Inno Setup installer script
+```
+
+## Build Executable
+
+```bash
+pyinstaller --onefile --windowed --icon=assets/icon.ico \
+  --add-data "assets/*;assets" --name "YouTube Downloader" main.py
+```
+
+## License
+
+Copyright © 2025 [Jean Herran](https://github.com/JeanC221).
+This project is [MIT](LICENSE) licensed.
+
+## Support
+
 [![GitHub Issues](https://img.shields.io/badge/Report-Issue-red?style=flat&logo=github)](https://github.com/JeanC221/Youtube-Video-Downloader/issues)
-[![Contact GitHub](https://img.shields.io/badge/Contact-GitHub_Profile-blue?logo=github)](https://github.com/JeanC221#readme)
-
-Star this repo if you find it useful! ⭐
