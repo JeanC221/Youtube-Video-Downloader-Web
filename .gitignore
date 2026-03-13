@@ -25,3 +25,7 @@ test_downloads/
 venv/
 .venv/
 env/
+
+# PyInstaller
+*.spec
+installer/

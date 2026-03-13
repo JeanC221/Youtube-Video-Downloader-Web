@@ -25,10 +25,10 @@ class Application:
         self.page = page
 
         page.title = "YouTube Video Downloader"
-        page.window.width = 1100
-        page.window.height = 750
-        page.window.min_width = 800
-        page.window.min_height = 600
+        page.window.width = 1148
+        page.window.height = 806
+        page.window.min_width = 1148
+        page.window.min_height = 806
 
         try:
             page.window.center()

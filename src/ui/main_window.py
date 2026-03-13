@@ -1,7 +1,7 @@
 """Main window layout and logic for the YouTube Video Downloader.
 
 This module builds the entire UI as a single Flet container and wires
-up all event handlers for downloading, history, theme switching, etc.
+up all event handlers for downloading, history, etc.
 """
 
 from __future__ import annotations
@@ -30,7 +30,6 @@ _CONFIG_PATH = Path.home() / ".youtube_downloader_config.json"
 _FORMAT_UI: List[Dict[str, str]] = [
     {"value": "mp4", "label": "MP4", "desc": "Video", "icon": ft.Icons.MOVIE_OUTLINED},
     {"value": "mkv", "label": "MKV", "desc": "Video HD", "icon": ft.Icons.HD_OUTLINED},
-    {"value": "webm", "label": "WebM", "desc": "Video", "icon": ft.Icons.WEB_OUTLINED},
     {"value": "mp3", "label": "MP3", "desc": "Audio", "icon": ft.Icons.MUSIC_NOTE_OUTLINED},
     {"value": "m4a", "label": "M4A", "desc": "Audio HQ", "icon": ft.Icons.HEADPHONES_OUTLINED},
     {"value": "wav", "label": "WAV", "desc": "Audio Raw", "icon": ft.Icons.GRAPHIC_EQ_OUTLINED},
@@ -126,7 +125,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
     #  HEADER                                                             #
     # ================================================================== #
 
-    title_icon = ft.Icon(ft.Icons.PLAY_CIRCLE_FILLED, color=theme.primary_color, size=28)
+    title_icon = ft.Image(src="logo.png", width=28, height=28, fit=ft.ImageFit.CONTAIN)
     title_text = ft.Text(
         "YouTube Downloader",
         size=22,
@@ -434,7 +433,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
     #  HISTORY                                                            #
     # ================================================================== #
 
-    history_list = ft.ListView(height=250, spacing=8, padding=8)
+    history_list = ft.ListView(height=300, spacing=8, padding=8, auto_scroll=False)
 
     history_empty_msg = ft.Container(
         content=ft.Column(
