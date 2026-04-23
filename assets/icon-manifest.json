@@ -1,0 +1,19 @@
+{
+  "concepts": [
+    {
+      "name": "concept-1-rounded-play",
+      "folder": "assets/logo-concepts/concept-1-rounded-play",
+      "svg": "assets/logo-concepts/concept-1-rounded-play/logo-master.svg"
+    },
+    {
+      "name": "concept-2-circle-download",
+      "folder": "assets/logo-concepts/concept-2-circle-download",
+      "svg": "assets/logo-concepts/concept-2-circle-download/logo-master.svg"
+    },
+    {
+      "name": "concept-3-combo",
+      "folder": "assets/logo-concepts/concept-3-combo",
+      "svg": "assets/logo-concepts/concept-3-combo/logo-master.svg"
+    }
+  ]
+}
