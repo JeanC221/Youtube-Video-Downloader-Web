@@ -5,6 +5,7 @@ Configures the page (window size, theme, etc.) and adds the main UI.
 
 from __future__ import annotations
 
+import inspect
 import logging
 
 import flet as ft
@@ -24,16 +25,33 @@ class Application:
         """Configure and populate *page* with the main window."""
         self.page = page
 
-        page.title = "YouTube Video Downloader"
-        page.window.width = 1148
-        page.window.height = 806
-        page.window.min_width = 1148
-        page.window.min_height = 806
+        async def _center_window_async() -> None:
+            try:
+                await page.window.center()
+            except AttributeError:
+                logger.debug("page.window.center() not supported by this Flet version")
 
+        page.title = "YouTube Video Downloader"
+
+        # Configure window. The ``page.window`` API has changed across Flet
+        # versions; we degrade gracefully if any attribute is missing.
         try:
-            page.window.center()
+            page.window.width = 1180
+            page.window.height = 820
+            page.window.min_width = 980
+            page.window.min_height = 720
         except AttributeError:
-            pass
+            logger.debug("page.window attributes not supported by this Flet version")
+
+        center_window = getattr(page.window, "center", None)
+        if callable(center_window):
+            run_task = getattr(page, "run_task", None)
+            if callable(run_task):
+                run_task(_center_window_async)
+            else:
+                result = center_window()
+                if inspect.isawaitable(result):
+                    logger.debug("Skipping async page.window.center() without page.run_task")
 
         page.padding = 0
         page.spacing = 0
@@ -48,14 +66,22 @@ class Application:
                     content=ft.Column(
                         [
                             ft.Icon(ft.Icons.ERROR, size=48, color="red"),
-                            ft.Text("Error al cargar la aplicacion:", size=20),
-                            ft.Text(str(exc), size=14),
+                            ft.Text("Error al cargar la aplicación:", size=20),
+                            ft.Text(str(exc), size=14, selectable=True),
+                            ft.Text(
+                                "Vuelve a iniciar la aplicación. Si el problema "
+                                "continúa, revisa los logs en la consola.",
+                                size=12,
+                                color="#94A3B8",
+                            ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=10,
                     ),
-                    alignment=ft.alignment.center,
+                    alignment=ft.Alignment(0, 0),
                     expand=True,
+                    padding=ft.padding.all(24),
                 )
             )
 

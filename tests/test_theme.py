@@ -16,25 +16,25 @@ class TestAppTheme:
     def test_light_mode_init(self) -> None:
         theme = AppTheme(is_dark=False)
         assert theme.is_dark is False
-        assert theme.bg_color == "#F8FAFC"
+        assert theme.bg_color == "#F5F7FB"
 
     def test_dark_mode_colors(self) -> None:
         theme = AppTheme(is_dark=True)
-        assert theme.bg_color == "#0F172A"
-        assert theme.surface_color == "#1E293B"
+        assert theme.bg_color == "#0B1220"
+        assert theme.surface_color == "#131C2E"
 
     def test_toggle_switches_mode(self) -> None:
         theme = AppTheme(is_dark=True)
         theme.toggle()
         assert theme.is_dark is False
-        assert theme.bg_color == "#F8FAFC"
+        assert theme.bg_color == "#F5F7FB"
 
     def test_toggle_twice_returns_original(self) -> None:
         theme = AppTheme(is_dark=True)
         theme.toggle()
         theme.toggle()
         assert theme.is_dark is True
-        assert theme.bg_color == "#0F172A"
+        assert theme.bg_color == "#0B1220"
 
     def test_get_flet_theme_mode_dark(self) -> None:
         theme = AppTheme(is_dark=True)

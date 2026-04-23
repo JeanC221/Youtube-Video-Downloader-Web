@@ -15,6 +15,7 @@ class TestStatusChip:
         theme = AppTheme()
         chip = StatusChip(theme)
         assert chip._status == "ready"
+        assert chip.theme is None
 
     def test_set_valid_status(self) -> None:
         theme = AppTheme()
@@ -49,12 +50,12 @@ class TestModernButton:
     def test_creation_with_defaults(self) -> None:
         btn = ModernButton(text="Click")
         assert btn._label == "Click"
-        assert btn.is_disabled is False
+        assert btn._is_disabled is False
         assert btn.opacity == 1.0
 
     def test_disabled_state(self) -> None:
         btn = ModernButton(text="Click", disabled=True)
-        assert btn.is_disabled is True
+        assert btn._is_disabled is True
         assert btn.opacity == 0.5
         assert btn.on_click is None
 
@@ -63,11 +64,11 @@ class TestModernButton:
         btn.update = MagicMock()
 
         btn.set_disabled(True)
-        assert btn.is_disabled is True
+        assert btn._is_disabled is True
         assert btn.opacity == 0.5
 
         btn.set_disabled(False)
-        assert btn.is_disabled is False
+        assert btn._is_disabled is False
         assert btn.opacity == 1.0
 
     def test_click_handler_called(self) -> None:
@@ -88,4 +89,4 @@ class TestModernButton:
     def test_with_custom_gradient(self) -> None:
         colors = ["#ff0000", "#00ff00"]
         btn = ModernButton(text="Custom", gradient_colors=colors)
-        assert btn.gradient_colors == colors
+        assert btn._gradient_colors == colors

@@ -1,11 +1,13 @@
-"""Tests for the Application class."""
+"""Tests for the Application class and runtime compatibility guard."""
 
+from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import flet as ft
 import pytest
 
 from src.app import Application
+from main import _check_flet_compatibility
 
 
 class TestApplication:
@@ -65,3 +67,27 @@ class TestApplication:
         app = Application()
         app.run()
         assert mock_flet_app.call_count == 2
+
+
+class TestFletCompatibilityGuard:
+    """The runtime guard must match the validated dependency range."""
+
+    @patch("importlib.metadata.version", return_value="0.84.0")
+    def test_accepts_supported_version(self, _mock_version: MagicMock) -> None:
+        _check_flet_compatibility()
+
+    @patch("importlib.metadata.version", return_value="0.28.3")
+    def test_rejects_old_version(self, _mock_version: MagicMock) -> None:
+        stderr = StringIO()
+        with patch("sys.stderr", stderr), pytest.raises(SystemExit) as exc:
+            _check_flet_compatibility()
+        assert exc.value.code == 2
+        assert "too old" in stderr.getvalue()
+
+    @patch("importlib.metadata.version", return_value="0.85.0")
+    def test_rejects_newer_unvalidated_version(self, _mock_version: MagicMock) -> None:
+        stderr = StringIO()
+        with patch("sys.stderr", stderr), pytest.raises(SystemExit) as exc:
+            _check_flet_compatibility()
+        assert exc.value.code == 2
+        assert "not supported" in stderr.getvalue()

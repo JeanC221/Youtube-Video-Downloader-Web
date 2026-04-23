@@ -80,4 +80,5 @@ def mock_page() -> MagicMock:
     page = MagicMock()
     page.update = MagicMock()
     page.overlay = []
+    page.services = []
     return page

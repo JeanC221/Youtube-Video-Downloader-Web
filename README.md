@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-86%20passed-brightgreen)]()
+[![Tests](https://img.shields.io/badge/Tests-123%20passed-brightgreen)]()
 
 Modern desktop application to download YouTube videos in multiple formats with a premium UI, persistent history, and robust error handling.
 
@@ -72,11 +72,12 @@ Youtube-Video-Downloader/
 │       ├── downloader.py    # YouTubeDownloader with retry, formats, progress
 │       └── history.py       # DownloadHistory with atomic writes and backups
 ├── tests/
-│   ├── test_app.py          # Application class tests
-│   ├── test_components.py   # UI component tests
-│   ├── test_downloader.py   # Downloader, sanitization, disk space tests
-│   ├── test_history.py      # History persistence, backup, search tests
-│   └── test_theme.py        # Theme toggle and colour attribute tests
+│   ├── test_app.py                  # Application class tests
+│   ├── test_components.py           # UI component tests
+│   ├── test_downloader.py           # Downloader, URL, errors, formats
+│   ├── test_history.py              # History persistence, backup, search
+│   ├── test_main_window_helpers.py  # friendly_error and format/UI sync
+│   └── test_theme.py                # Theme toggle and colour attribute tests
 └── installer.iss            # Inno Setup installer script
 ```
 

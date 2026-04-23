@@ -341,7 +341,9 @@ class TestDownload:
         time.sleep(8)  # Wait for retries (2^1 + 2^2 = 6s + margin)
 
         assert len(errors) >= 1
-        assert "2 intentos" in errors[-1]
+        # Downloader passes the underlying error message through; the UI is
+        # responsible for translating it into a friendlier sentence.
+        assert "Network timeout" in errors[-1]
 
 
 # -----------------------------------------------------------------------
@@ -396,3 +398,76 @@ class TestProgressHook:
         )
         assert len(calls) == 1
         assert "desconocido" in calls[0][1].lower()
+
+
+# -----------------------------------------------------------------------
+# _is_terminal_error
+# -----------------------------------------------------------------------
+
+from src.utils.downloader import _is_terminal_error
+
+
+class TestIsTerminalError:
+    """Errors that must NOT be retried."""
+
+    @pytest.mark.parametrize(
+        "msg",
+        [
+            "ERROR: Video unavailable",
+            "This video is private",
+            "Members-only content",
+            "Sign in to confirm your age",
+            "Video has been removed by the user",
+            "blocked due to copyright",
+            "not available in your country",
+            "Unsupported URL: foo",
+            "Requested format is not available",
+        ],
+    )
+    def test_terminal_errors(self, msg: str) -> None:
+        assert _is_terminal_error(msg) is True
+
+    @pytest.mark.parametrize(
+        "msg",
+        [
+            "",
+            "Network timeout",
+            "Connection reset by peer",
+            "HTTP Error 503: Service Unavailable",
+            "fragment 3 not found, retrying",
+        ],
+    )
+    def test_transient_errors(self, msg: str) -> None:
+        assert _is_terminal_error(msg) is False
+
+
+# -----------------------------------------------------------------------
+# URL pattern hardening
+# -----------------------------------------------------------------------
+
+class TestUrlAnchoring:
+    """Make sure the anchored regex rejects spoofed URLs."""
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://music.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/live/dQw4w9WgXcQ",
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            "https://www.youtube.com/watch?feature=share&v=dQw4w9WgXcQ",
+        ],
+    )
+    def test_extra_valid_urls(self, url: str) -> None:
+        assert YouTubeDownloader.validate_url(url) is True
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://evil.com/youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/watch?v=short",  # too short ID
+            "https://youtu.be/abc",
+        ],
+    )
+    def test_spoofed_or_malformed_rejected(self, url: str) -> None:
+        assert YouTubeDownloader.validate_url(url) is False
