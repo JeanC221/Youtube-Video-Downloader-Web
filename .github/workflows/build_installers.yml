@@ -1,0 +1,83 @@
+name: Build Installers and App Bundles
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          python -m pytest -q
+
+  build-windows:
+    name: Build Windows installer (Inno Setup)
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Build Windows executable with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --name "YouTube Downloader" --icon=assets/icon.ico main.py
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+      - name: Compile installer with Inno Setup
+        run: '"C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" installer.iss'
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-installer-windows
+          path: installer/YouTube_Downloader_v2_Setup.exe
+
+  build-macos:
+    name: Build macOS bundle
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+      - name: Build macOS app with PyInstaller
+        run: |
+          pyinstaller --noconfirm --windowed --name "YouTube Downloader" --icon=assets/icon.icns main.py
+          # Zip resulting bundle for upload (handles common output variations)
+          if [ -d "dist/YouTube Downloader" ]; then
+            cd dist
+            zip -r ../../YouTube-Downloader-mac.zip "YouTube Downloader"
+            cd ..
+          elif [ -d "dist/YouTube Downloader.app" ]; then
+            zip -r YouTube-Downloader-mac.zip "dist/YouTube Downloader.app"
+          else
+            echo "No macOS app bundle found."
+          fi
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-app-macos
+          path: YouTube-Downloader-mac.zip
