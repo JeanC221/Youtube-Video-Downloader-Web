@@ -68,10 +68,10 @@ class StatusChip(ft.Container):
             alignment=ft.MainAxisAlignment.CENTER,
         )
 
-        self.padding = ft.padding.symmetric(horizontal=12, vertical=6)
+        self.padding = ft.Padding.symmetric(horizontal=12, vertical=6)
         self.border_radius = 20
         self.bgcolor = ft.Colors.with_opacity(0.1, color)
-        self.border = ft.border.all(1, ft.Colors.with_opacity(0.2, color))
+        self.border = ft.Border.all(1, ft.Colors.with_opacity(0.2, color))
         self.animate = ft.Animation(300, ft.AnimationCurve.EASE_OUT)
 
     def _build_color_map(self) -> dict[str, str]:
@@ -97,7 +97,7 @@ class StatusChip(ft.Container):
         color = self._color_map[status]
 
         self.bgcolor = ft.Colors.with_opacity(0.1, color)
-        self.border = ft.border.all(1, ft.Colors.with_opacity(0.2, color))
+        self.border = ft.Border.all(1, ft.Colors.with_opacity(0.2, color))
 
         self.status_icon.name = self._ICON_MAP[status]
         self.status_icon.color = color

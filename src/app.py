@@ -81,7 +81,7 @@ class Application:
                     ),
                     alignment=ft.Alignment(0, 0),
                     expand=True,
-                    padding=ft.padding.all(24),
+                    padding=ft.Padding.all(24),
                 )
             )
 

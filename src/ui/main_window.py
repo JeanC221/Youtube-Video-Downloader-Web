@@ -229,18 +229,48 @@ def MainWindow(page: ft.Page) -> ft.Container:
         bg = theme.snackbar_bg
         txt_color = theme.snackbar_text
         icon_color = color or theme.primary_color
+        icon_badge = ft.Container(
+            content=ft.Icon(icon, color=icon_color, size=18),
+            width=32,
+            height=32,
+            border_radius=DT.RADIUS_SM,
+            bgcolor=ft.Colors.with_opacity(0.18, icon_color),
+            alignment=ft.Alignment(0, 0),
+        )
         snack = ft.SnackBar(
             content=ft.Row(
                 [
-                    ft.Icon(icon, color=icon_color, size=20),
-                    ft.Text(message, color=txt_color, size=14, expand=True),
+                    icon_badge,
+                    ft.Text(
+                        message,
+                        color=txt_color,
+                        size=DT.FONT_BODY,
+                        weight=DT.WEIGHT_MEDIUM,
+                        expand=True,
+                    ),
                 ],
-                spacing=10,
+                spacing=DT.SPACING_MD,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
             bgcolor=bg,
             duration=3000,
+            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_MD),
+            padding=ft.Padding.symmetric(horizontal=DT.SPACING_LG, vertical=DT.SPACING_MD),
         )
         page.show_dialog(snack)
+
+    # ------------------------------------------------------------------ #
+    #  Shared IconButton style (hover + focus ring for accessibility)    #
+    # ------------------------------------------------------------------ #
+    def _icon_btn_style() -> ft.ButtonStyle:
+        return ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_SM),
+            bgcolor={ft.ControlState.HOVERED: theme.hover_color},
+            overlay_color={
+                ft.ControlState.FOCUSED: ft.Colors.with_opacity(0.18, theme.primary_color),
+                ft.ControlState.PRESSED: ft.Colors.with_opacity(0.24, theme.primary_color),
+            },
+        )
 
     # ================================================================== #
     #  STATUS CHIP                                                        #
@@ -292,10 +322,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         tooltip="Cómo usar la aplicación",
         icon_size=22,
         on_click=lambda _e: show_help_dialog(),
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_SM),
-            bgcolor={ft.ControlState.HOVERED: theme.hover_color},
-        ),
+        style=_icon_btn_style(),
     )
 
     theme_btn = ft.IconButton(
@@ -304,10 +331,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         tooltip="Cambiar tema (claro/oscuro)",
         icon_size=22,
         on_click=lambda _e: toggle_theme(),
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_SM),
-            bgcolor={ft.ControlState.HOVERED: theme.hover_color},
-        ),
+        style=_icon_btn_style(),
     )
 
     header = ft.Container(
@@ -335,12 +359,12 @@ def MainWindow(page: ft.Page) -> ft.Container:
                 ft.Container(
                     height=1,
                     bgcolor=theme.divider_color,
-                    margin=ft.margin.only(top=DT.SPACING_MD),
+                    margin=ft.Margin.only(top=DT.SPACING_MD),
                 ),
             ],
             spacing=0,
         ),
-        padding=ft.padding.symmetric(horizontal=DT.SPACING_XL, vertical=DT.SPACING_LG),
+        padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL, vertical=DT.SPACING_LG),
     )
 
     # ================================================================== #
@@ -377,10 +401,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         tooltip="Pegar desde portapapeles",
         icon_size=20,
         on_click=lambda _e: paste_from_clipboard(),
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_SM),
-            bgcolor={ft.ControlState.HOVERED: theme.hover_color},
-        ),
+        style=_icon_btn_style(),
     )
 
     url_section = ft.Container(
@@ -389,7 +410,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
             spacing=DT.SPACING_SM,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         ),
-        padding=ft.padding.only(left=DT.SPACING_XL, right=DT.SPACING_XL, top=DT.SPACING_SM, bottom=DT.SPACING_SM),
+        padding=ft.Padding.only(left=DT.SPACING_XL, right=DT.SPACING_XL, top=DT.SPACING_SM, bottom=DT.SPACING_SM),
     )
 
     # ================================================================== #
@@ -420,10 +441,10 @@ def MainWindow(page: ft.Page) -> ft.Container:
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=DT.SPACING_XS + 2,
             ),
-            padding=ft.padding.symmetric(horizontal=DT.SPACING_MD, vertical=10),
+            padding=ft.Padding.symmetric(horizontal=DT.SPACING_MD, vertical=10),
             border_radius=DT.RADIUS_SM,
             bgcolor=bg,
-            border=ft.border.all(1.5 if is_selected else 1, border_clr),
+            border=ft.Border.all(1.5 if is_selected else 1, border_clr),
             on_click=lambda _e, v=value: select_format(v),
             animate=ft.Animation(180, "easeOut"),
             data=value,
@@ -478,10 +499,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         icon_color=theme.text_secondary,
         icon_size=22,
         on_click=lambda e: select_folder(e),
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_SM),
-            bgcolor={ft.ControlState.HOVERED: theme.hover_color},
-        ),
+        style=_icon_btn_style(),
     )
 
     folder_section = ft.Row(
@@ -528,9 +546,9 @@ def MainWindow(page: ft.Page) -> ft.Container:
         ),
         visible=False,
         animate_opacity=ft.Animation(300, "easeOut"),
-        padding=ft.padding.symmetric(horizontal=DT.SPACING_MD, vertical=DT.SPACING_MD),
+        padding=ft.Padding.symmetric(horizontal=DT.SPACING_MD, vertical=DT.SPACING_MD),
         bgcolor=theme.surface_subtle,
-        border=ft.border.all(1, theme.border_color),
+        border=ft.Border.all(1, theme.border_color),
         border_radius=DT.RADIUS_MD,
     )
 
@@ -579,7 +597,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         width=320,
         height=180,
         bgcolor=theme.surface_subtle,
-        border=ft.border.all(1, theme.border_color),
+        border=ft.Border.all(1, theme.border_color),
         border_radius=DT.RADIUS_MD,
         alignment=ft.Alignment(0, 0),
     )
@@ -597,7 +615,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         width=320,
         height=180,
         bgcolor=theme.surface_subtle,
-        border=ft.border.all(1, theme.border_color),
+        border=ft.Border.all(1, theme.border_color),
         border_radius=DT.RADIUS_MD,
         alignment=ft.Alignment(0, 0),
         visible=False,
@@ -627,14 +645,30 @@ def MainWindow(page: ft.Page) -> ft.Container:
         spacing=16,
     )
 
+    # Metadata block animates in (fade + slight offset) once the video info
+    # resolves. Wrapped separately so it can be opacity-toggled without
+    # affecting the thumbnail area.
+    video_meta_block = ft.Container(
+        content=ft.Column(
+            [
+                video_title,
+                ft.Container(height=DT.SPACING_XS),
+                video_meta_row,
+            ],
+            spacing=0,
+        ),
+        opacity=0,
+        offset=ft.Offset(0, 0.05),
+        animate_opacity=ft.Animation(350, ft.AnimationCurve.EASE_OUT),
+        animate_offset=ft.Animation(350, ft.AnimationCurve.EASE_OUT),
+    )
+
     video_info_card = ft.Container(
         content=ft.Column(
             [
                 ft.Stack([video_placeholder, video_loading, video_img]),
                 ft.Container(height=DT.SPACING_MD),
-                video_title,
-                ft.Container(height=DT.SPACING_XS),
-                video_meta_row,
+                video_meta_block,
             ],
             spacing=0,
         ),
@@ -642,7 +676,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         animate_opacity=300,
         padding=DT.SPACING_LG,
         bgcolor=theme.surface_elevated,
-        border=ft.border.all(1, theme.border_color),
+        border=ft.Border.all(1, theme.border_color),
         border_radius=DT.RADIUS_LG,
         shadow=theme.elevation_1(),
     )
@@ -654,22 +688,45 @@ def MainWindow(page: ft.Page) -> ft.Container:
     history_list = ft.ListView(
         height=300,
         spacing=DT.SPACING_SM,
-        padding=ft.padding.symmetric(horizontal=0, vertical=DT.SPACING_SM),
+        padding=ft.Padding.symmetric(horizontal=0, vertical=DT.SPACING_SM),
         auto_scroll=False,
     )
 
     history_empty_msg = ft.Container(
         content=ft.Column(
             [
-                ft.Icon(ft.Icons.HISTORY_OUTLINED, size=32, color=theme.text_disabled),
-                ft.Text("Sin descargas recientes", color=theme.text_disabled, size=13),
+                ft.Container(
+                    content=ft.Icon(
+                        ft.Icons.HISTORY_OUTLINED,
+                        size=32,
+                        color=theme.text_secondary,
+                    ),
+                    width=64,
+                    height=64,
+                    border_radius=DT.RADIUS_PILL,
+                    bgcolor=ft.Colors.with_opacity(0.08, theme.primary_color),
+                    alignment=ft.Alignment(0, 0),
+                ),
+                ft.Container(height=DT.SPACING_MD),
+                ft.Text(
+                    "Sin descargas recientes",
+                    color=theme.text_primary,
+                    size=DT.FONT_BODY,
+                    weight=DT.WEIGHT_SEMIBOLD,
+                ),
+                ft.Text(
+                    "Tus descargas aparecerán aquí",
+                    color=theme.text_muted,
+                    size=DT.FONT_BODY_SM,
+                    text_align=ft.TextAlign.CENTER,
+                ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=8,
+            spacing=DT.SPACING_XS,
         ),
         alignment=ft.Alignment(0, 0),
-        padding=30,
+        padding=ft.Padding.symmetric(horizontal=DT.SPACING_LG, vertical=DT.SPACING_XL),
     )
 
     header_history = ft.Text(
@@ -711,7 +768,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
         padding=DT.SPACING_LG,
         bgcolor=theme.surface_elevated,
         border_radius=DT.RADIUS_LG,
-        border=ft.border.all(1, theme.border_color),
+        border=ft.Border.all(1, theme.border_color),
         shadow=theme.elevation_1(),
     )
 
@@ -729,7 +786,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
                         weight=DT.WEIGHT_BOLD,
                         color=theme.text_primary,
                     ),
-                    padding=ft.padding.symmetric(horizontal=DT.SPACING_XL),
+                    padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL),
                 ),
                 ft.Container(height=DT.SPACING_MD),
                 url_section,
@@ -739,17 +796,17 @@ def MainWindow(page: ft.Page) -> ft.Container:
                         [format_section_label, ft.Container(height=DT.SPACING_SM), format_grid],
                         spacing=0,
                     ),
-                    padding=ft.padding.symmetric(horizontal=DT.SPACING_XL),
+                    padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL),
                 ),
                 ft.Container(height=DT.SPACING_LG),
                 ft.Container(
                     content=folder_section,
-                    padding=ft.padding.symmetric(horizontal=DT.SPACING_XL),
+                    padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL),
                 ),
                 ft.Container(height=DT.SPACING_LG),
                 ft.Container(
                     content=progress_container,
-                    padding=ft.padding.symmetric(horizontal=DT.SPACING_XL),
+                    padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL),
                 ),
                 ft.Container(height=DT.SPACING_SM),
                 ft.Container(
@@ -757,16 +814,16 @@ def MainWindow(page: ft.Page) -> ft.Container:
                         [download_btn],
                         horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     ),
-                    padding=ft.padding.symmetric(horizontal=DT.SPACING_XL),
+                    padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL),
                 ),
                 ft.Container(height=DT.SPACING_MD),
             ],
             scroll=ft.ScrollMode.AUTO,
         ),
-        padding=ft.padding.only(top=DT.SPACING_XL, bottom=DT.SPACING_XL),
+        padding=ft.Padding.only(top=DT.SPACING_XL, bottom=DT.SPACING_XL),
         bgcolor=theme.surface_elevated,
         border_radius=DT.RADIUS_XL,
-        border=ft.border.all(1, theme.border_color),
+        border=ft.Border.all(1, theme.border_color),
         shadow=theme.elevation_2(),
     )
 
@@ -791,7 +848,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         ),
-        padding=ft.padding.symmetric(horizontal=DT.SPACING_XL, vertical=DT.SPACING_MD),
+        padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL, vertical=DT.SPACING_MD),
     )
 
     # ================================================================== #
@@ -821,7 +878,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
             chip.bgcolor = (
                 ft.Colors.with_opacity(0.15, theme.primary_color) if is_me else theme.input_bgcolor
             )
-            chip.border = ft.border.all(1, theme.primary_color if is_me else theme.border_color)
+            chip.border = ft.Border.all(1, theme.primary_color if is_me else theme.border_color)
             row = chip.content
             row.controls[0].color = theme.primary_color if is_me else theme.text_secondary
             row.controls[1].color = theme.text_primary if is_me else theme.text_secondary
@@ -867,6 +924,10 @@ def MainWindow(page: ft.Page) -> ft.Container:
             video_loading.visible = True
             video_img.visible = False
             video_placeholder.visible = False
+            # Reset metadata animation while fetching so it re-plays once
+            # the info resolves.
+            video_meta_block.opacity = 0
+            video_meta_block.offset = ft.Offset(0, 0.05)
             page.update()
             page.run_task(_load_video_info_preview, url, request_id)
         else:
@@ -903,6 +964,9 @@ def MainWindow(page: ft.Page) -> ft.Container:
 
         status_chip.set_status("ready")
         video_info_card.opacity = 1.0
+        # Trigger metadata fade-in microanimation.
+        video_meta_block.opacity = 1.0
+        video_meta_block.offset = ft.Offset(0, 0)
 
         thumb_url = info.get("thumbnail")
         if thumb_url:
@@ -1072,7 +1136,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
                                             weight=DT.WEIGHT_BOLD,
                                         ),
                                         bgcolor=ft.Colors.with_opacity(0.12, theme.primary_color),
-                                        padding=ft.padding.symmetric(
+                                        padding=ft.Padding.symmetric(
                                             horizontal=DT.SPACING_SM,
                                             vertical=2,
                                         ),
@@ -1101,16 +1165,16 @@ def MainWindow(page: ft.Page) -> ft.Container:
                 spacing=DT.SPACING_MD,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            padding=ft.padding.symmetric(horizontal=DT.SPACING_MD, vertical=DT.SPACING_MD - 2),
+            padding=ft.Padding.symmetric(horizontal=DT.SPACING_MD, vertical=DT.SPACING_MD - 2),
             bgcolor=theme.card_color,
             border_radius=DT.RADIUS_MD,
-            border=ft.border.all(1, theme.border_color),
+            border=ft.Border.all(1, theme.border_color),
             animate=ft.Animation(150, "easeOut"),
         )
 
         def _on_hover(e: ft.HoverEvent, c: ft.Container = container) -> None:
             hovering = e.data == "true"
-            c.border = ft.border.all(1, theme.border_strong if hovering else theme.border_color)
+            c.border = ft.Border.all(1, theme.border_strong if hovering else theme.border_color)
             c.bgcolor = theme.hover_color if hovering else theme.card_color
             try:
                 c.update()
@@ -1224,36 +1288,72 @@ def MainWindow(page: ft.Page) -> ft.Container:
 
     def show_help_dialog() -> None:
         steps = [
-            (ft.Icons.CONTENT_COPY, "Copia el enlace del vídeo desde YouTube."),
-            (ft.Icons.LINK, "Pégalo en el campo de URL (o pulsa el icono de pegar)."),
-            (ft.Icons.TUNE, "Elige el formato: MP4 para vídeo, MP3 para audio, etc."),
-            (ft.Icons.FOLDER_OUTLINED, "Si quieres, cambia la carpeta de destino."),
-            (ft.Icons.DOWNLOAD_ROUNDED, "Pulsa Descargar y espera a que termine."),
-            (ft.Icons.HISTORY, "Tu historial queda guardado por si quieres reabrir el archivo."),
+            (ft.Icons.CONTENT_COPY, "Copia el enlace", "Desde YouTube, copia la URL del vídeo."),
+            (ft.Icons.LINK, "Pega la URL", "En el campo de URL o pulsa el icono de pegar."),
+            (ft.Icons.TUNE, "Elige formato", "MP4 para vídeo, MP3 para audio, etc."),
+            (ft.Icons.FOLDER_OUTLINED, "Selecciona carpeta", "Si quieres, cambia la carpeta de destino."),
+            (ft.Icons.DOWNLOAD_ROUNDED, "Descarga", "Pulsa Descargar y espera a que termine."),
+            (ft.Icons.HISTORY, "Revisa el historial", "Queda guardado para reabrir archivos más tarde."),
         ]
 
         step_controls = []
-        for i, (icon, text) in enumerate(steps, 1):
+        for i, (icon, title, desc) in enumerate(steps, 1):
             step_controls.append(
                 ft.Container(
                     content=ft.Row(
                         [
                             ft.Container(
-                                content=ft.Text(str(i), size=14, weight=ft.FontWeight.BOLD, color=theme.text_on_primary),
-                                width=28,
-                                height=28,
-                                border_radius=14,
-                                bgcolor=theme.primary_color,
+                                content=ft.Text(
+                                    str(i),
+                                    size=DT.FONT_BODY,
+                                    weight=DT.WEIGHT_BOLD,
+                                    color=theme.text_on_primary,
+                                ),
+                                width=32,
+                                height=32,
+                                border_radius=DT.RADIUS_PILL,
+                                gradient=ft.LinearGradient(
+                                    colors=theme.primary_gradient,
+                                    begin=ft.Alignment(-1, -1),
+                                    end=ft.Alignment(1, 1),
+                                ),
                                 alignment=ft.Alignment(0, 0),
+                                shadow=ft.BoxShadow(
+                                    blur_radius=8,
+                                    color=ft.Colors.with_opacity(0.3, theme.primary_gradient[0]),
+                                    offset=ft.Offset(0, 2),
+                                ),
                             ),
                             ft.Icon(icon, size=22, color=theme.primary_color),
-                            ft.Text(text, size=14, color=theme.text_primary, expand=True),
+                            ft.Column(
+                                [
+                                    ft.Text(
+                                        title,
+                                        size=DT.FONT_BODY,
+                                        weight=DT.WEIGHT_SEMIBOLD,
+                                        color=theme.text_primary,
+                                    ),
+                                    ft.Text(
+                                        desc,
+                                        size=DT.FONT_BODY_SM,
+                                        color=theme.text_secondary,
+                                    ),
+                                ],
+                                spacing=2,
+                                tight=True,
+                                expand=True,
+                            ),
                         ],
-                        spacing=12,
+                        spacing=DT.SPACING_MD,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     ),
-                    padding=ft.padding.symmetric(horizontal=6, vertical=8),
-                    border_radius=10,
-                    bgcolor=theme.card_color,
+                    padding=ft.Padding.symmetric(
+                        horizontal=DT.SPACING_MD,
+                        vertical=DT.SPACING_MD,
+                    ),
+                    border_radius=DT.RADIUS_MD,
+                    bgcolor=theme.surface_subtle,
+                    border=ft.Border.all(1, theme.border_color),
                 ),
             )
 
@@ -1261,21 +1361,56 @@ def MainWindow(page: ft.Page) -> ft.Container:
             modal=True,
             title=ft.Row(
                 [
-                    ft.Icon(ft.Icons.HELP_OUTLINE, color=theme.primary_color, size=24),
-                    ft.Text("Cómo usar YouTube Downloader", size=18, weight=ft.FontWeight.BOLD),
+                    ft.Container(
+                        content=ft.Icon(
+                            ft.Icons.HELP_OUTLINE,
+                            color=theme.text_on_primary,
+                            size=22,
+                        ),
+                        width=36,
+                        height=36,
+                        border_radius=DT.RADIUS_SM,
+                        gradient=ft.LinearGradient(
+                            colors=theme.primary_gradient,
+                            begin=ft.Alignment(-1, -1),
+                            end=ft.Alignment(1, 1),
+                        ),
+                        alignment=ft.Alignment(0, 0),
+                    ),
+                    ft.Text(
+                        "Cómo usar YouTube Downloader",
+                        size=DT.FONT_TITLE,
+                        weight=DT.WEIGHT_BOLD,
+                        color=theme.text_primary,
+                    ),
                 ],
-                spacing=10,
+                spacing=DT.SPACING_MD,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
             content=ft.Container(
-                content=ft.Column(step_controls, spacing=4, scroll=ft.ScrollMode.AUTO),
-                width=480,
-                height=340,
+                content=ft.Column(
+                    step_controls,
+                    spacing=DT.SPACING_SM,
+                    scroll=ft.ScrollMode.AUTO,
+                ),
+                width=520,
+                height=420,
             ),
+            shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_LG),
+            bgcolor=theme.surface_elevated,
             actions=[
                 ft.TextButton(
                     "Entendido",
                     on_click=lambda _e: _close_help(),
-                    style=ft.ButtonStyle(color=theme.primary_color),
+                    style=ft.ButtonStyle(
+                        color=theme.text_on_primary,
+                        bgcolor=theme.primary_color,
+                        padding=ft.Padding.symmetric(
+                            horizontal=DT.SPACING_LG,
+                            vertical=DT.SPACING_SM,
+                        ),
+                        shape=ft.RoundedRectangleBorder(radius=DT.RADIUS_SM),
+                    ),
                 ),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
@@ -1315,7 +1450,7 @@ def MainWindow(page: ft.Page) -> ft.Container:
                     spacing=DT.SPACING_XL,
                     vertical_alignment=ft.CrossAxisAlignment.START,
                 ),
-                padding=ft.padding.symmetric(horizontal=DT.SPACING_XL, vertical=DT.SPACING_SM),
+                padding=ft.Padding.symmetric(horizontal=DT.SPACING_XL, vertical=DT.SPACING_SM),
                 expand=True,
             ),
             footer,
