@@ -29,3 +29,7 @@ env/
 # PyInstaller
 *.spec
 installer/
+
+# Frontend
+node_modules/
+.DS_Store

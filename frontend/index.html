@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Downloader | Modern Web</title>
+  <meta name="description" content="Descarga videos de YouTube en alta calidad rápidamente." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="flex items-center justify-center p-4 antialiased">
+  <main class="w-full max-w-2xl mt-20">
+    <div class="text-center mb-12">
+      <h1 class="text-5xl font-bold mb-4 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+        YouTube Downloader
+      </h1>
+      <p class="text-slate-400 text-lg">Descarga videos y audio en un solo clic, sin límites.</p>
+    </div>
+
+    <div class="glass rounded-3xl p-8 sm:p-10 relative overflow-hidden">
+      <!-- Glow effect -->
+      <div class="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+      
+      <form id="download-form" class="space-y-6 relative z-10">
+        <div>
+          <label for="url" class="block text-sm font-medium text-slate-300 mb-2">Enlace del Video</label>
+          <input 
+            type="url" 
+            id="url" 
+            name="url" 
+            placeholder="https://www.youtube.com/watch?v=..." 
+            required
+            autocomplete="off"
+            class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
+          >
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Formato</label>
+          <div class="grid grid-cols-2 gap-4">
+            <label class="cursor-pointer">
+              <input type="radio" name="format" value="video" class="peer sr-only" checked>
+              <div class="rounded-xl border border-slate-700 px-4 py-3 text-center hover:bg-slate-800/50 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 transition-all duration-200">
+                <span class="font-semibold block">Video (MP4)</span>
+                <span class="text-xs text-slate-500 block mt-1">Mejor Calidad</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="format" value="audio" class="peer sr-only">
+              <div class="rounded-xl border border-slate-700 px-4 py-3 text-center hover:bg-slate-800/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 peer-checked:text-cyan-400 transition-all duration-200">
+                <span class="font-semibold block">Audio</span>
+                <span class="text-xs text-slate-500 block mt-1">Extraer Sonido</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          id="submit-btn"
+          class="w-full mt-6 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500"
+        >
+          <span>Descargar Ahora</span>
+        </button>
+
+        <div id="status-container" class="hidden mt-4 text-center">
+          <div class="inline-flex items-center space-x-2 text-indigo-400">
+            <svg class="animate-spin h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="status-text" class="text-sm font-medium animate-pulse">Procesando y preparando descarga...</span>
+          </div>
+        </div>
+
+        <div id="error-container" class="hidden mt-4 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm">
+        </div>
+      </form>
+    </div>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
