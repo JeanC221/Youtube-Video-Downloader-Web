@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --animate-pulse-slow: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @layer utilities {
   .glass {
-    @apply bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+    @apply backdrop-blur-xl border border-white/10;
   }
 }
 
 body {
-  background: radial-gradient(circle at top left, #1e1b4b, #0f172a, #020617);
-  background-attachment: fixed;
-  color: #f8fafc;
-  min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-attachment: fixed;
+  background: radial-gradient(circle at top left, #1e1b4b, #0f172a, #020617);
 }
 
 /* Custom minimal scrollbar */

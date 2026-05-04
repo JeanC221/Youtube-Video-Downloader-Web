@@ -1,85 +1,205 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Downloader | Modern Web</title>
-  <meta name="description" content="Descarga videos de YouTube en alta calidad rápidamente." />
+  <title>Media Vault | Video Downloader</title>
+  <meta name="description" content="Descarga tus videos y música de forma rápida y sencilla." />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/style.css" />
 </head>
-<body class="flex items-center justify-center p-4 antialiased">
-  <main class="w-full max-w-2xl mt-20">
-    <div class="text-center mb-12">
-      <h1 class="text-5xl font-bold mb-4 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-        YouTube Downloader
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col">
+  
+  <!-- Header / Nav -->
+  <header class="w-full p-6 flex justify-between items-center max-w-5xl mx-auto">
+    <div class="flex items-center space-x-3">
+      <img src="/logo.png" alt="Media Vault Logo" class="w-10 h-10 rounded-xl shadow-lg ring-1 ring-white/10" />
+      <span class="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400">
+        Media Vault
+      </span>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <!-- Help Button -->
+      <button id="help-btn" class="px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none">
+        ¿Cómo funciona?
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-grow w-full max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center">
+    
+    <div class="text-center mb-10">
+      <h1 class="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
+        Guarda tus <br/>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 dark:from-cyan-400 dark:via-blue-500 dark:to-indigo-500">
+          Videos y Canciones
+        </span>
       </h1>
-      <p class="text-slate-400 text-lg">Descarga videos y audio en un solo clic, sin límites.</p>
+      <p class="text-slate-600 dark:text-slate-400 text-lg max-w-xl mx-auto">
+        Descarga tu contenido favorito de YouTube directamente a tu computadora. Rápido, seguro y sin complicaciones.
+      </p>
     </div>
 
-    <div class="glass rounded-3xl p-8 sm:p-10 relative overflow-hidden">
+    <!-- Glassmorphism Form Card -->
+    <div class="w-full glass rounded-3xl p-6 sm:p-10 relative overflow-hidden mb-12 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
       <!-- Glow effect -->
-      <div class="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+      <div class="absolute -top-32 -right-32 w-64 h-64 bg-cyan-400 dark:bg-cyan-600 rounded-full blur-[80px] opacity-20 dark:opacity-20 pointer-events-none"></div>
+      <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-indigo-400 dark:bg-indigo-600 rounded-full blur-[80px] opacity-20 dark:opacity-20 pointer-events-none"></div>
       
       <form id="download-form" class="space-y-6 relative z-10">
         <div>
-          <label for="url" class="block text-sm font-medium text-slate-300 mb-2">Enlace del Video</label>
+          <label for="url" class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">1. Enlace de YouTube</label>
           <input 
             type="url" 
             id="url" 
             name="url" 
-            placeholder="https://www.youtube.com/watch?v=..." 
+            placeholder="Pega el enlace aquí..." 
             required
             autocomplete="off"
-            class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
+            class="w-full bg-white/70 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300"
           >
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-2">Formato</label>
+          <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">2. ¿Qué deseas descargar?</label>
           <div class="grid grid-cols-2 gap-4">
             <label class="cursor-pointer">
               <input type="radio" name="format" value="video" class="peer sr-only" checked>
-              <div class="rounded-xl border border-slate-700 px-4 py-3 text-center hover:bg-slate-800/50 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 peer-checked:text-indigo-400 transition-all duration-200">
-                <span class="font-semibold block">Video (MP4)</span>
-                <span class="text-xs text-slate-500 block mt-1">Mejor Calidad</span>
+              <div class="rounded-2xl border border-slate-300 dark:border-slate-700 px-4 py-4 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-500/10 peer-checked:text-cyan-700 dark:peer-checked:text-cyan-400 transition-all duration-200">
+                <span class="font-bold block text-slate-800 dark:text-slate-200 peer-checked:text-cyan-700 dark:peer-checked:text-cyan-400">Video</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400 block mt-1">Con imagen y sonido</span>
               </div>
             </label>
             <label class="cursor-pointer">
               <input type="radio" name="format" value="audio" class="peer sr-only">
-              <div class="rounded-xl border border-slate-700 px-4 py-3 text-center hover:bg-slate-800/50 peer-checked:border-cyan-500 peer-checked:bg-cyan-500/10 peer-checked:text-cyan-400 transition-all duration-200">
-                <span class="font-semibold block">Audio</span>
-                <span class="text-xs text-slate-500 block mt-1">Extraer Sonido</span>
+              <div class="rounded-2xl border border-slate-300 dark:border-slate-700 px-4 py-4 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-500/10 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-400 transition-all duration-200">
+                <span class="font-bold block text-slate-800 dark:text-slate-200 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-400">Solo Música</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400 block mt-1">Archivo de audio</span>
               </div>
             </label>
           </div>
+        </div>
+
+        <div id="folder-selection-container">
+          <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">3. ¿Dónde lo guardamos?</label>
+          <div class="flex items-center justify-between bg-white/70 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-3">
+            <span id="folder-name-display" class="text-slate-600 dark:text-slate-400 text-sm truncate mr-4">
+              Carpeta de Descargas (Por defecto)
+            </span>
+            <button type="button" id="select-folder-btn" class="shrink-0 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold py-2 px-4 rounded-xl transition-colors">
+              Elegir carpeta
+            </button>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Si no eliges una, se irá a tu carpeta habitual de descargas.</p>
         </div>
 
         <button 
           type="submit" 
           id="submit-btn"
-          class="w-full mt-6 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500"
+          class="w-full mt-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-cyan-500/30 transform transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 focus:ring-cyan-500"
         >
-          <span>Descargar Ahora</span>
+          <span>¡Descargar!</span>
         </button>
+      </form>
 
-        <div id="status-container" class="hidden mt-4 text-center">
-          <div class="inline-flex items-center space-x-2 text-indigo-400">
-            <svg class="animate-spin h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span id="status-text" class="text-sm font-medium animate-pulse">Procesando y preparando descarga...</span>
+      <!-- Feedback States Container -->
+      <div id="feedback-container" class="hidden relative z-10 mt-6 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm shadow-inner">
+        
+        <!-- State: Validating -->
+        <div id="state-validating" class="hidden flex flex-col items-center justify-center space-y-3">
+          <svg class="animate-spin h-8 w-8 text-cyan-600 dark:text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Preparando tu archivo...</span>
+        </div>
+
+        <!-- State: Downloading -->
+        <div id="state-downloading" class="hidden flex flex-col items-center justify-center space-y-4">
+          <div class="relative w-full h-2 bg-slate-300 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-full animate-pulse-slow origin-left"></div>
+          </div>
+          <div class="flex flex-col items-center text-center">
+            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Descarga en progreso...</span>
+            <span class="text-xs text-slate-600 dark:text-slate-400 mt-1">Por favor, no cierres esta pestaña hasta que termine.</span>
           </div>
         </div>
 
-        <div id="error-container" class="hidden mt-4 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm">
+        <!-- State: Success -->
+        <div id="state-success" class="hidden flex flex-col items-center justify-center space-y-3">
+          <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-200">¡Listo!</span>
+          <span class="text-xs text-slate-600 dark:text-slate-400 text-center">El archivo se ha guardado en tu computadora.</span>
+          <button type="button" id="btn-reset" class="mt-2 text-sm font-semibold text-cyan-700 dark:text-cyan-400 hover:underline">Descargar otro</button>
         </div>
-      </form>
+
+        <!-- State: Error -->
+        <div id="state-error" class="hidden flex flex-col items-center justify-center space-y-3 text-center">
+          <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </div>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Ups, algo salió mal</span>
+          <span id="error-message" class="text-xs text-red-600 dark:text-red-400"></span>
+          <button type="button" id="btn-reset-error" class="mt-2 text-sm font-semibold text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline">Intentarlo de nuevo</button>
+        </div>
+
+      </div>
     </div>
+
   </main>
+  
+  <footer class="w-full text-center py-6 text-sm text-slate-500">
+    <p>Media Vault &copy; 2026. Proyecto educativo.</p>
+  </footer>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div id="help-modal-backdrop" class="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative w-full max-w-lg glass bg-white/90 dark:bg-slate-900/90 rounded-3xl p-8 shadow-2xl transform transition-all">
+      <button id="close-modal-btn" class="absolute top-4 right-4 p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+      
+      <h2 class="text-2xl font-bold mb-6 text-slate-800 dark:text-white">¿Cómo funciona?</h2>
+      <div class="space-y-6">
+        <div class="flex items-start space-x-4">
+          <div class="w-10 h-10 shrink-0 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 flex items-center justify-center font-bold">1</div>
+          <div>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-200">Pega el enlace</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Ve a YouTube, copia el enlace del video que te gusta y pégalo en la casilla.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="w-10 h-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold">2</div>
+          <div>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-200">Elige la carpeta</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Haz clic en "Elegir carpeta" para decidir en qué parte de tu computadora quieres que se guarde. Si no lo haces, se irá directo a tus "Descargas".</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="w-10 h-10 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center font-bold">3</div>
+          <div>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-200">Haz clic en Descargar</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">¡Nosotros hacemos el resto! Espera unos momentos y el archivo estará listo en tu PC.</p>
+          </div>
+        </div>
+      </div>
+      <button id="close-modal-btn-bottom" class="w-full mt-8 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold py-3 rounded-xl transition-colors">
+        Entendido
+      </button>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
