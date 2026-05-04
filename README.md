@@ -1,98 +1,87 @@
-  # YouTube Video Downloader
+# YouTube Video Downloader Web
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-123%20passed-brightgreen)]()
+A modern, web-based application for downloading YouTube videos and extracting audio in high quality, built with a distributed microservices architecture.
 
-Modern desktop application to download YouTube videos in multiple formats with a premium UI, persistent history, and robust error handling.
+> **Note:** The original Flet-based desktop application has been deprecated and moved to the `legacy_desktop` directory for historical reference.
 
-## Features
+## Architecture
 
-- **Multiple Formats** — MP4, MP3, M4A, WAV, WebM, MKV, or original quality
-- **Best Quality Selection** — Automatically merges best video + best audio via ffmpeg
-- **Smart Preview** — Thumbnails and video details before downloading
-- **Dark / Light Themes** — Premium gradient UI with one-click toggle
-- **Download History** — Persistent history with search, deduplication, and atomic saves
-- **Retry Logic** — Automatic retries with exponential backoff on network failures
-- **Disk Space Check** — Validates available space before downloading
-- **Windows-Safe Filenames** — Sanitizes forbidden characters automatically
-- **Progress Tracking** — Real-time speed, ETA, and percentage display
-- **Metadata Caching** — Avoids re-fetching info for the same URL
+This project is decoupled into two primary services:
 
-## Quick Start
+### 1. Frontend (Netlify Ready)
+- **Tech Stack:** Vite, Vanilla JavaScript, HTML5, and Tailwind CSS v4.
+- **Features:** 
+  - Modern "glassmorphism" user interface.
+  - Responsive design with smooth animations.
+  - Triggers native browser downloads without consuming excessive client RAM.
+- **Directory:** `/frontend`
 
-### Requirements
+### 2. Backend (Render Ready)
+- **Tech Stack:** Python 3.11+, FastAPI, Uvicorn, and yt-dlp.
+- **Features:** 
+  - Streams video data directly to the client (via stdout and FastAPI StreamingResponse).
+  - Bypasses persistent disk storage requirements on cloud hosting environments (like Render).
+  - Uses `player-client` HTTP 403 workarounds to ensure stable downloads.
+- **Directory:** `/backend`
 
-- Python 3.10+
-- ffmpeg (bundled via `imageio-ffmpeg`)
+---
 
-### Installation
+## Local Development Setup
 
-```bash
-git clone https://github.com/JeanC221/Youtube-Video-Downloader.git
-cd Youtube-Video-Downloader
-python -m venv venv
+### Backend
 
-# Windows
-venv\Scripts\activate
+1. Navigate to the root directory and create a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   ```
+2. Install the required dependencies:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+3. Run the FastAPI development server:
+   ```bash
+   uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
 
-# Linux / macOS
-source venv/bin/activate
+The backend API will be available at `http://localhost:8000`.
 
-pip install -r requirements.txt
-```
+### Frontend
 
-### Run
+1. Open a new terminal and navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install Node dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-python main.py
-```
+The frontend application will be accessible at `http://localhost:3000`.
 
-### Run Tests
+---
 
-```bash
-python -m pytest tests/ -v
-python -m pytest tests/ --cov=src --cov-report=term-missing
-```
+## Deployment
 
-## Project Structure
+### Deploying the Backend to Render
+1. Connect your repository to Render.
+2. Create a new **Web Service**.
+3. Render will automatically detect the `render.yaml` configuration in the root directory.
+4. Ensure the `FRONTEND_URL` environment variable is set to your Netlify production domain.
 
-```
-Youtube-Video-Downloader/
-├── main.py                  # Entry point with logging configuration
-├── requirements.txt         # Python dependencies
-├── conftest.py              # Shared pytest fixtures
-├── src/
-│   ├── app.py               # Flet Application class
-│   ├── ui/
-│   │   ├── components.py    # StatusChip, ModernButton, TooltipIconButton
-│   │   ├── main_window.py   # Main window layout and event handlers
-│   │   └── theme.py         # Dark/Light theme colour definitions
-│   └── utils/
-│       ├── downloader.py    # YouTubeDownloader with retry, formats, progress
-│       └── history.py       # DownloadHistory with atomic writes and backups
-├── tests/
-│   ├── test_app.py                  # Application class tests
-│   ├── test_components.py           # UI component tests
-│   ├── test_downloader.py           # Downloader, URL, errors, formats
-│   ├── test_history.py              # History persistence, backup, search
-│   ├── test_main_window_helpers.py  # friendly_error and format/UI sync
-│   └── test_theme.py                # Theme toggle and colour attribute tests
-└── installer.iss            # Inno Setup installer script
-```
+### Deploying the Frontend to Netlify
+1. Connect your repository to Netlify.
+2. Set the Base Directory to `frontend`.
+3. Build command: `npm run build`
+4. Publish directory: `frontend/dist`
+5. The `netlify.toml` file will automatically handle SPA redirects.
+6. Make sure to configure the `VITE_API_URL` environment variable in Netlify to point to your Render Backend URL.
 
-## Build Executable
-
-```bash
-pyinstaller --onefile --windowed --icon=assets/icon.ico \
-  --add-data "assets/*;assets" --name "YouTube Downloader" main.py
-```
+---
 
 ## License
-
-Copyright © 2025 [Jean Herran](https://github.com/JeanC221).
-This project is [MIT](LICENSE) licensed.
-
-## Support
-
-[![GitHub Issues](https://img.shields.io/badge/Report-Issue-red?style=flat&logo=github)](https://github.com/JeanC221/Youtube-Video-Downloader/issues)
+MIT License. See `LICENSE` for more information.
