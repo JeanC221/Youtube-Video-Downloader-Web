@@ -32,7 +32,7 @@ def get_video_info(url: str, type_selection: str):
     ydl_opts = {
         'quiet': True,
         'noplaylist': True,
-        'format': 'best' if type_selection == "video" else 'bestaudio/best',
+        'format': 'best[ext=mp4]/best' if type_selection == "video" else 'bestaudio[ext=m4a]/bestaudio/best',
         'extractor_args': {'youtube': ['player-client=ios,android,web']}
     }
     try:
@@ -69,7 +69,7 @@ async def download_video(url: str = Query(..., description="URL of the YouTube v
     # yt-dlp stream generator
     def iter_file():
         import sys
-        format_sel = 'best' if type == 'video' else 'bestaudio/best'
+        format_sel = 'best[ext=mp4]/best' if type == 'video' else 'bestaudio[ext=m4a]/bestaudio/best'
         
         cmd = [
             sys.executable, '-m', 'yt_dlp',
