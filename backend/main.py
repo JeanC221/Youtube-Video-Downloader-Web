@@ -33,7 +33,7 @@ def get_video_info(url: str, type_selection: str):
         'quiet': True,
         'noplaylist': True,
         'format': 'best[ext=mp4]/best' if type_selection == "video" else 'bestaudio[ext=m4a]/bestaudio/best',
-        'extractor_args': {'youtube': ['player-client=ios,android,web']}
+        'extractor_args': {'youtube': ['player-client=android,ios']}
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -77,7 +77,7 @@ async def download_video(url: str = Query(..., description="URL of the YouTube v
             '-o', '-',
             '--quiet',
             '--no-playlist',
-            '--extractor-args', 'youtube:player-client=ios,android,web',
+            '--extractor-args', 'youtube:player-client=android,ios',
             url
         ]
         
