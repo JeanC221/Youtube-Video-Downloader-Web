@@ -1,16 +1,14 @@
 import os
-import subprocess
 import logging
-import re
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-import yt_dlp
+from pydantic import BaseModel
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="YouTube Downloader API")
+app = FastAPI(title="Media Vault API")
 
 # Configure CORS
 FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
@@ -24,35 +22,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_video_info(url: str, type_selection: str):
-    """
-    Obtiene la información del video. 
-    type_selection puede ser 'video' o 'audio'.
-    """
-    ydl_opts = {
-        'quiet': True,
-        'noplaylist': True,
-        'format': 'best[ext=mp4]/best' if type_selection == "video" else 'bestaudio[ext=m4a]/bestaudio/best',
-        'extractor_args': {'youtube': ['player-client=android,ios']}
-    }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            if not info:
-                raise ValueError("No se pudo extraer la información.")
-            
-            title = info.get('title', 'download')
-            # Limpiar nombre de archivo
-            safe_title = re.sub(r'[\\/*?:"<>|]', "", title).strip()
-            
-            ext = info.get('ext', 'mp4')
-            filename = f"{safe_title}.{ext}"
-            return filename, info
-    except Exception as e:
-        logger.error(f"Error extrayendo info de {url}: {e}")
-        raise ValueError(f"Bloqueo de YouTube detectado: {str(e)}")
+COBALT_API_URL = "https://api.cobalt.tools/api/json"
 
-@app.get("/api/download")
+class DownloadResponse(BaseModel):
+    url: str
+    filename: str
+
+@app.get("/api/download", response_model=DownloadResponse)
 async def download_video(url: str = Query(..., description="URL of the YouTube video"),
                          type: str = Query("video", description="Format: video or audio")):
     if not url:
@@ -61,48 +37,48 @@ async def download_video(url: str = Query(..., description="URL of the YouTube v
     if type not in ["video", "audio"]:
         raise HTTPException(status_code=400, detail="El tipo debe ser 'video' o 'audio'")
     
-    try:
-        filename, info = get_video_info(url, type)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    
-    # yt-dlp stream generator
-    def iter_file():
-        import sys
-        format_sel = 'best[ext=mp4]/best' if type == 'video' else 'bestaudio[ext=m4a]/bestaudio/best'
-        
-        cmd = [
-            sys.executable, '-m', 'yt_dlp',
-            '-f', format_sel,
-            '-o', '-',
-            '--quiet',
-            '--no-playlist',
-            '--extractor-args', 'youtube:player-client=android,ios',
-            url
-        ]
-        
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        try:
-            while True:
-                chunk = process.stdout.read(65536)
-                if not chunk:
-                    break
-                yield chunk
-            
-            # Check for errors after the stream is done
-            stderr_output = process.stderr.read().decode('utf-8')
-            if stderr_output and "ERROR" in stderr_output:
-                logger.error(f"yt-dlp error: {stderr_output}")
-                
-        finally:
-            process.stdout.close()
-            process.stderr.close()
-            process.wait()
-
     headers = {
-        'Content-Disposition': f'attachment; filename="{filename}"',
-        'Access-Control-Expose-Headers': 'Content-Disposition'
+        "Accept": "application/json",
+        "Content-Type": "application/json"
     }
     
-    return StreamingResponse(iter_file(), media_type="application/octet-stream", headers=headers)
+    payload = {
+        "url": url,
+        "filenamePattern": "classic"
+    }
+    
+    if type == "video":
+        payload["vQuality"] = "1080"
+    elif type == "audio":
+        payload["isAudioOnly"] = True
+        payload["aFormat"] = "mp3"
+        
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(COBALT_API_URL, json=payload, headers=headers, timeout=30.0)
+            
+            if response.status_code != 200:
+                logger.error(f"Cobalt API error: {response.text}")
+                raise HTTPException(status_code=400, detail="Error procesando el enlace. Intenta de nuevo.")
+                
+            data = response.json()
+            
+            if data.get("status") == "error":
+                error_msg = data.get("text", "Error desconocido en Cobalt")
+                logger.error(f"Cobalt returned error: {error_msg}")
+                raise HTTPException(status_code=400, detail=f"No se pudo descargar: {error_msg}")
+                
+            download_url = data.get("url")
+            if not download_url:
+                raise HTTPException(status_code=500, detail="Cobalt no retornó un enlace válido.")
+                
+            filename = f"media_vault_{'video' if type == 'video' else 'audio'}.{'mp4' if type == 'video' else 'mp3'}"
+            
+            return DownloadResponse(url=download_url, filename=filename)
+            
+    except httpx.RequestError as e:
+        logger.error(f"HTTP Request error connecting to Cobalt: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error conectando con el servicio de descarga.")
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")

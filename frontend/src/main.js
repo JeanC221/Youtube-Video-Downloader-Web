@@ -110,22 +110,32 @@ form.addEventListener('submit', async (e) => {
       throw new Error(errorData.detail || 'No se pudo procesar la descarga.');
     }
 
-    const disposition = response.headers.get('content-disposition');
-    let filename = 'descarga.mp4';
-    if (disposition && disposition.indexOf('filename=') !== -1) {
-        const matches = /filename="([^"]+)"/.exec(disposition);
-        if (matches != null && matches[1]) {
-            filename = matches[1];
-        }
-    }
+    const data = await response.json();
+    const streamUrl = data.url;
+    let filename = data.filename || 'descarga.mp4';
 
     showState('downloading');
+
+    // Descargar el archivo real desde Cobalt
+    const fileResponse = await fetch(streamUrl);
+    if (!fileResponse.ok) {
+      throw new Error('El enlace de descarga ha caducado o es inválido.');
+    }
+
+    const disposition = fileResponse.headers.get('content-disposition');
+    if (disposition && disposition.indexOf('filename=') !== -1) {
+        // Regex para extraer el nombre de archivo (con o sin comillas, manejando codificación UTF-8 básica)
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+        if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+        }
+    }
 
     if (directoryHandle) {
       // Usar la carpeta previamente elegida
       const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
       const writable = await fileHandle.createWritable();
-      await response.body.pipeTo(writable);
+      await fileResponse.body.pipeTo(writable);
     } else if ('showSaveFilePicker' in window) {
       // Fallback nativo: Guardar como...
       try {
@@ -140,7 +150,7 @@ form.addEventListener('submit', async (e) => {
           }]
         });
         const writable = await fileHandle.createWritable();
-        await response.body.pipeTo(writable);
+        await fileResponse.body.pipeTo(writable);
       } catch (cancelError) {
         // Canceló el diálogo
         resetForm();
@@ -148,7 +158,7 @@ form.addEventListener('submit', async (e) => {
       }
     } else {
       // Fallback para Safari y navegadores antiguos
-      const blob = await response.blob();
+      const blob = await fileResponse.blob();
       const objectUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objectUrl;
