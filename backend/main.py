@@ -50,7 +50,7 @@ def get_video_info(url: str, type_selection: str):
             return filename, info
     except Exception as e:
         logger.error(f"Error extrayendo info de {url}: {e}")
-        raise ValueError("No se pudo obtener la información del video. Verifica la URL.")
+        raise ValueError(f"Bloqueo de YouTube detectado: {str(e)}")
 
 @app.get("/api/download")
 async def download_video(url: str = Query(..., description="URL of the YouTube video"),
